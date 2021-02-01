@@ -63,21 +63,21 @@ public:
      * returns if the tracker currently tracks a previous entity
      */
     bool has_prev() {
-        return m_prev;
+        return static_cast<bool>(m_prev);
     }
 
     /**
      * returns if the tracker currently tracks a current entity
      */
     bool has_cur() {
-        return m_cur;
+        return static_cast<bool>(m_cur);
     }
 
     /**
      * returns if the tracker currently tracks a "next" entity
      */
     bool has_next() {
-        return m_next;
+        return static_cast<bool>(m_next);
     }
 
     /**
