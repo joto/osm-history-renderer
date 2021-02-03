@@ -111,7 +111,8 @@ private:
             DbCopyConn::escape_string(cur->user()) << '\t' <<
             valid_from << '\t' <<
             valid_to << '\t' <<
-            HStore::format(cur->tags()) << '\t';
+            HStore::format(cur->tags()) << '\t'
+            << "\\N\t";   // TODO: actual layer value
 
         if(cur->visible()) {
             line << "SRID=900913;POINT(" << lon << ' ' << lat << ')';
@@ -267,6 +268,7 @@ private:
             Timestamp::formatDb(valid_from) << '\t' <<
             Timestamp::formatDb(valid_to) << '\t' <<
             HStore::format(tags) << '\t' <<
+            "\\N\t" <<   // TODO: actual layer value
             ZOrderCalculator::calculateZOrder(tags) << '\t';
 
         if(geom == NULL) {
