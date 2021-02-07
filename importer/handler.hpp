@@ -2,6 +2,9 @@
 #define IMPORTER_HANDLER_HPP
 
 #include <fstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <libpq-fe.h>
 
@@ -53,7 +56,23 @@ private:
 
     std::map<osm_user_id_t, std::string> m_username_map;
     typedef std::pair<osm_user_id_t, std::string> username_pair_t;
+    char layer_strbuf[8];
 
+    const char* layer_from_tags(shared_ptr<Osmium::OSM::Object const> obj) {
+        const char* layer_str = obj->tags().get_value_by_key("layer");
+        if (! layer_str || ! strlen(layer_str))
+            return "\\N";
+
+        int layer = atoi(layer_str);  // 0 on error is OK
+        if ((layer == 0) || (layer < -999999) || (layer > 999999))
+            return "\\N";
+
+        // Can't return layer_str itself, might not be an integer:
+        // values like "-1; 2" have been seen in map data
+
+        snprintf(layer_strbuf, sizeof(layer_strbuf), "%d", layer);
+        return layer_strbuf;
+    }
 
     void write_node() {
         const shared_ptr<Osmium::OSM::Node const> next = m_node_tracker.next();
@@ -112,7 +131,7 @@ private:
             valid_from << '\t' <<
             valid_to << '\t' <<
             HStore::format(cur->tags()) << '\t'
-            << "\\N\t";   // TODO: actual layer value
+            << layer_from_tags(cur) << '\t';
 
         if(cur->visible()) {
             line << "SRID=900913;POINT(" << lon << ' ' << lat << ')';
@@ -179,6 +198,7 @@ private:
             valid_from,
             valid_to,
             cur->tags(),
+            layer_from_tags(cur),
             cur->nodes()
         );
 
@@ -217,6 +237,7 @@ private:
                     valid_from,
                     valid_to,
                     cur->tags(),
+                    layer_from_tags(cur),
                     cur->nodes()
                 );
 
@@ -237,6 +258,7 @@ private:
         time_t valid_from,
         time_t valid_to,
         const Osmium::OSM::TagList &tags,
+        const char* layer_value,  // integer as string, or "\\N" for null or 0
         const Osmium::OSM::WayNodeList &nodes
     ) {
         if(m_debug) {
@@ -268,7 +290,7 @@ private:
             Timestamp::formatDb(valid_from) << '\t' <<
             Timestamp::formatDb(valid_to) << '\t' <<
             HStore::format(tags) << '\t' <<
-            "\\N\t" <<   // TODO: actual layer value
+            layer_value << '\t' <<
             ZOrderCalculator::calculateZOrder(tags) << '\t';
 
         if(geom == NULL) {
@@ -437,6 +459,8 @@ public:
         m_progress.init(meta);
 
         wkb.setIncludeSRID(true);
+
+        memset(layer_strbuf, 0, sizeof(layer_strbuf));
     }
 
     void final() {
