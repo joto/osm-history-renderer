@@ -13,9 +13,14 @@ If you'd like to support this project, Flatter it:
 ## Build it
 The importer can be compiled with g++ or clang++. Both compilers are mentioned in the Makefile, so just uncomment whichever suites your needs best. Build it using make and then run it as described below.
 
+Building the [openstreetmap-carto](https://github.com/gravitystorm/openstreetmap-carto/) map style requires Nodejs 10 and mapnik-utils.
+
 ## Run it
 In order to run it, you'll need data-input. I'd suggest starting with a small extract as a basis. There are some [hosted extracts](http://osm.personalwerk.de/full-history-extracts/).
+See [TUTORIAL.md](TUTORIAL.md) for other places you can download from.
 All extracts have been created using my [OpenStreetMap History Splitter](https://github.com/MaZderMind/osm-history-splitter/), so if you want your own area, go and download the latest [Full-Experimental Dump](http://osm.personalwerk.de/full-experimental/) and split it yourself using the `--softcut` mode.
+
+The quickest way to run an extract, though, is with the `osmium extract` command in [TUTORIAL.md](TUTORIAL.md).
 
 Next you're going to need a postgres-database with `postgis`, `hstore` and `btree_gist` installed. Check out the [Tutorial](https://github.com/MaZderMind/osm-history-renderer/blob/master/TUTORIAL.md) for details.
 
@@ -29,24 +34,27 @@ You can specify some options at the command line:
 
 See the [libpq documentation](http://www.postgresql.org/docs/8.1/static/libpq.html#LIBPQ-CONNECT) for a detailed descriptions of the dsn parameters. Beware: the importer does *not* honor relations right now, so no multipolygon-areas or routes in the database.
 
-After the import is completed, you can use the render.py and render-animation.py in the "rendering" directory. They work on regular osm styles, so you need to follow the usual preparations for those styles:
+After the import is completed, you can use the render.py and render-animation.py in the "rendering" directory. They work on regular osm carto styles, so you need to follow the usual preparations for those styles:
 
-    svn co http://svn.openstreetmap.org/applications/rendering/mapnik/ osm-mapnik-style
-    cd osm-mapnik-style/
-    ./get-coastlines.sh
-    ./generate_xml.py --accept-none --prefix 'hist_view'
+    git clone --single-branch --branch v4.23.0 https://github.com/gravitystorm/openstreetmap-carto.git --depth 1
+    cd openstreetmap-carto
+    npm install -g carto@0.18.2
+    carto project.mml > mapnik.xml
+    scripts/get-shapefiles.py
 
-If you have mapnik2, you'll need to migrate the osm.xml to mapnik2 syntax:
-    upgrade_map_xml.py osm.xml osm-mapnik2.xml
+You'll need to adjust mapnik.xml's SQL statements to use 'hist_view' prefix names:
+
+    sed 's/planet_osm/hist_view/g' mapnik.xml > mapnik-hist.xml
+    cd ..
 
 'hist_view' is a special value. During rendering, render.py will create views (hist_view_point, hist_view_line, ..) that represent the state of the database at a given point in time. Those views behave just like regular osm2pgsql tables and enable history rendering with nearly all existing osm2pgsql styles. Now that you prepared your rendering-style, it's time to render your first image:
 
-    ./render.py --style ~/osm-mapnik-style/osm-mapnik2.xml --bbox 8.177700,49.771700,8.205600,49.791600 --date 2009-01-01
+    ./render.py --style ~/openstreetmap-carto/mapnik-hist.xml --bbox 8.177700,49.771700,8.205600,49.791600 --date 2009-01-01
 
 Interested in how your town looked in 2009, hm? And it was all in the OSM-Database - all that time! Sleeping data.. *getting melancholic*
 So let's see how your town evolved over time - let's make an animation:
 
-    ./render-animation.py --style ~/osm-mapnik-style/osm-mapnik2.xml --bbox 8.177700,49.771700,8.205600,49.791600
+    ./render-animation.py --style ~/openstreetmap-carto/mapnik-hist.xml --bbox 8.177700,49.771700,8.205600,49.791600
 
 This will leave you with a set of .png files, one for each month since the first node was placed in your area. If you want render-animation.py to assemble a real video for you, use `--type mp4`. This will create a lossless mp4 for you. Use render-animation.py `-h` to get information over the wide range of control, the script gives to you.
 

@@ -3,8 +3,19 @@ This is a complete tutorial which will guide you through creating your own histo
 
 ## installing the packages
 First off, you'll need a set of packages. The latest Version of the main OpenStreetMap.org-Style requires mapnik2 which is not in the stable release
-of Debian 6.0, which is why we're pulling the mapnik2-libs from the testing repositories. If you're on  Ubuntu 12.10 you're lucky, as here everything
+of Debian 6.0, which is why we're pulling the mapnik2-libs from the testing repositories. If you're on  Ubuntu 12.10 you're lucky, as nearly everything
 you need is in the repos.
+
+Building the [openstreetmap-carto](https://github.com/gravitystorm/openstreetmap-carto/) map style requires Nodejs 10 and mapnik-utils.
+One way to install node on an ubuntu or debian system is:
+- Read through the script https://deb.nodesource.com/setup_10.x to make sure you're comfortable with what it does
+- Run:
+```
+wget --quiet -O - https://deb.nodesource.com/setup_10.x | sudo -E bash -
+apt-get update && apt-get install -y nodejs
+```
+
+Also make sure you have PostGIS 2 or newer.
 
 ### on Debian 6.0.4
 first of all: [install sudo](http://www.ducea.com/2006/05/18/install-sudo-on-debian/) and create a sudoers file. In order to get pyton-mapnik2 running under debian stable, we need to upgrade gcc land libc6 as well.
@@ -22,7 +33,7 @@ first of all: [install sudo](http://www.ducea.com/2006/05/18/install-sudo-on-deb
     sudo apt-get install postgresql postgresql-contrib postgresql-8.4-postgis postgis zlib1g-dev libexpat1 libexpat1-dev  \
         libxml2 libxml2-dev libgeos-dev libgeos++-dev libprotobuf6 libprotobuf-dev protobuf-compiler libsparsehash-dev \
         libboost-dev libgdal1-dev libproj-dev subversion git build-essential unzip python-dateutil python-psycopg2 \
-        graphicsmagick doxygen graphviz clang
+        graphicsmagick doxygen graphviz mapnik-utils clang
     
     sudo apt-get -t testing install python-mapnik2
 
@@ -31,11 +42,14 @@ first of all: [install sudo](http://www.ducea.com/2006/05/18/install-sudo-on-deb
     sudo apt-get install postgresql-9.1 postgresql-contrib-9.1 postgresql-9.1-postgis postgis zlib1g-dev libexpat1 libexpat1-dev  \
         libxml2 libxml2-dev libgeos-dev libgeos++-dev libprotobuf7 libprotobuf-dev protobuf-compiler libsparsehash-dev libboost-dev \
         libgdal1-dev libproj-dev subversion git build-essential unzip python-dateutil python-psycopg2 \
-        graphicsmagick doxygen graphviz python-mapnik2 clang
+        graphicsmagick doxygen graphviz python-mapnik2 mapnik-utils clang
 
 ## getting and building the tools
-Next, you'll want to download and build the history-splitter and the history-renderer.
-First, get and build the osm-pbf lib:
+Next, you'll want to download and build required libraries and the history-splitter and the history-renderer.
+
+### osm-pbf lib
+
+If your distribution has `libosmpbf-dev`, install that. Otherwise:
 
     git clone https://github.com/scrosby/OSM-binary.git
     cd OSM-binary/src
@@ -43,7 +57,9 @@ First, get and build the osm-pbf lib:
     sudo make install
     cd ../..
 
-Second you'll need osmium:
+### osmium lib
+
+The history importer currently needs v0 of the osmium lib, not v2.
 
     git clone https://github.com/joto/osmium.git
     cd osmium
@@ -51,7 +67,13 @@ Second you'll need osmium:
     sudo make install
     cd ..
 
-Next, get and build the splitter:
+### if your distribution has `osmium-tool` 1.5 or newer
+
+You will use `osmium extract` to quickly split off the small area you want to import and render.
+
+    sudo apt-get install osmium-tool
+
+### otherwise, build osm-history-splitter
 
     git clone https://github.com/MaZderMind/osm-history-splitter.git
     cd osm-history-splitter
@@ -59,9 +81,9 @@ Next, get and build the splitter:
     sudo make install
     cd ..
 
-Next one will be the importer and renderer:
+### The importer and renderer
 
-    git clone https://github.com/MaZderMind/osm-history-renderer.git
+    git clone https://github.com/joto/osm-history-renderer.git
     cd osm-history-renderer/importer
     make
     sudo make install
@@ -70,13 +92,35 @@ Next one will be the importer and renderer:
 Congratulations. You're now equipped with everything you need.
 
 ## cutting your area
- Most people will want to create their own extract before rendering, so we'll cover this step here, too. First, download the [latest full-planet-full-history pbf](http://planet.openstreetmap.org/pbf/full-history/history-latest.osm.pbf).
+ Most people will want to create their own extract before rendering, so we'll cover this step here, too.
+
+### downloading a region
+
+You could download the entire [latest full-planet-full-history pbf](http://planet.openstreetmap.org/pbf/full-history/history-latest.osm.pbf).
  
     mkdir osm-data
     cd osm-data
     wget http://planet.openstreetmap.org/pbf/full-history/history-latest.osm.pbf
 
-next we'll create a splitter-config-file. Create a file named "splitter.config" which contains a single line:
+For a smaller download, you can browse by region for an `.osh.pbf` file in the "internal" area of
+https://osm-internal.download.geofabrik.de/ (their "public downloads" don't have history files).
+For example, [Regierungsbezirk Karlsruhe](https://osm-internal.download.geofabrik.de/europe/germany/baden-wuerttemberg/karlsruhe-regbez.html) is 291 MB.
+
+Be sure to get the `.osh.pbf` history file, not `.osm.pbf` current data.
+
+### if using osmium extract
+
+This will quickly extract the region you want to cut out and import.
+
+    osmium extract karlsruhe-regbez-internal.osh.pbf -H --bbox 8.3122,48.9731,8.5139,49.0744 --set-bounds -o karlsruhe.osh.pbf
+
+If you want, afterwards you can view statistics for the number of nodes and ways:
+
+    osmium fileinfo -e karlsruhe.osh.pbf
+
+### if using osm-history-splitter
+
+We'll create a splitter-config-file. Create a file named "splitter.config" which contains a single line:
 
     karlsruhe.osh.pbf BBOX 8.3122,48.9731,8.5139,49.0744
 
@@ -132,31 +176,38 @@ You cann call psql again to see the freshly created tables.
 If you get short on RAM (especially if your extract is somehow bigger then a city), add ``--nodestore sparse`` to your command. check the README on the details about the sparse nodestore.
 
 ## getting the style
-now it's time to visualize that data. You can use any mapnik-style you want like the [openstreetmap.org-style](http://svn.openstreetmap.org/applications/rendering/mapnik/) or the [mapquest-style](https://github.com/MapQuest/MapQuest-Mapnik-Style) or, if you in Germany, you'll probably want to try out the [german style](http://www.openstreetmap.de/germanstyle.html). We'll choose the openstreetmap.org-style for this tutorial:
+now it's time to visualize that data. You can use any mapnik-style you want like the [openstreetmap.org-style](https://github.com/gravitystorm/openstreetmap-carto/) or the [mapquest-style](https://github.com/MapQuest/MapQuest-Mapnik-Style) or, if you in Germany, you'll probably want to try out the [german style](http://www.openstreetmap.de/germanstyle.html).
 
-    svn co http://svn.openstreetmap.org/applications/rendering/mapnik/ osm-mapnik-style
-    cd osm-mapnik-style
-    ./get-coastlines.sh
-    ./generate_xml.py --accept-none --prefix hist_view
-    cd ..
+We'll choose the openstreetmap.org-style for this tutorial:
+
+    git clone --single-branch --branch v4.23.0 https://github.com/gravitystorm/openstreetmap-carto.git --depth 1
+    cd openstreetmap-carto
+    npm install -g carto@0.18.2
+    carto project.mml > mapnik.xml
+    scripts/get-shapefiles.py
+    sed 's/planet_osm/hist_view/g' mapnik.xml > mapnik-hist.xml
 
 so now you have the style and all required components.
+
+Note: Those carto rendering commands and specific versions were taken from a recent copy of
+https://github.com/Overv/openstreetmap-tile-server/blob/master/Dockerfile
+which builds a basic ready-to-run tile server.
 
 ## rendering
 let's paint colorful maps:
 
-    osm-history-renderer/renderer/render.py --style osm-mapnik-style/osm.xml --date 2011-10-01 \
+    osm-history-renderer/renderer/render.py --style openstreetmap-carto/mapnik-hist.xml --date 2011-10-01 \
         --bbox 8.3122,48.9731,8.5139,49.0744 --file 2011
 
 yeehaw! this is karlsruhe! But how did it look in 2008?
 
-    osm-history-renderer/renderer/render.py --style osm-mapnik-style/osm.xml --date 2008-10-01 \
+    osm-history-renderer/renderer/render.py --style openstreetmap-carto/mapnik-hist.xml --date 2008-10-01 \
         --bbox 8.3122,48.9731,8.5139,49.0744 --file 2008
 
 awesome what we achived in only 3 years!
 But what happend in between? Let's make an animation of that area:
 
-    osm-history-renderer/renderer/render-animation.py --style osm-mapnik-style/osm.xml --bbox 8.3122,48.9731,8.5139,49.0744
+    osm-history-renderer/renderer/render-animation.py --style openstreetmap-carto/mapnik-hist.xml --bbox 8.3122,48.9731,8.5139,49.0744
 
 The script will calculate the first time a node was placed in that area and render one frame per month until today. You can control the start and end-date, the time span between the frames and much, much more using other command-line args. Just check out
 

@@ -9,7 +9,8 @@ CREATE TABLE hist_point (
     user_name text,
     valid_from timestamp without time zone,
     valid_to timestamp without time zone,
-    tags hstore
+    tags hstore,
+    layer integer
 );
 SELECT AddGeometryColumn(
     -- table name
@@ -40,6 +41,7 @@ CREATE TABLE hist_line (
     valid_from timestamp without time zone,
     valid_to timestamp without time zone,
     tags hstore,
+    layer integer,
     z_order integer
 );
 SELECT AddGeometryColumn(
@@ -71,6 +73,7 @@ CREATE TABLE hist_polygon (
     valid_from timestamp without time zone,
     valid_to timestamp without time zone,
     tags hstore,
+    layer integer,
     z_order integer,
     area real
 );
