@@ -10,8 +10,10 @@ Building the [openstreetmap-carto](https://github.com/gravitystorm/openstreetmap
 One way to install node on an ubuntu or debian system is:
 - Read through the script https://deb.nodesource.com/setup_10.x to make sure you're comfortable with what it does
 - Run:
-      wget --quiet -O - https://deb.nodesource.com/setup_10.x | sudo -E bash -
-      apt-get update && apt-get install -y nodejs
+```
+wget --quiet -O - https://deb.nodesource.com/setup_10.x | sudo -E bash -
+apt-get update && apt-get install -y nodejs
+```
 
 Also make sure you have PostGIS 2 or newer.
 
@@ -67,7 +69,7 @@ The history importer currently needs v0 of the osmium lib, not v2.
 
 ### if your distribution has `osmium-tool` 1.5 or newer
 
-You can use `osmium extract` to quickly split off the small area you want to import and render.
+You will use `osmium extract` to quickly split off the small area you want to import and render.
 
     sudo apt-get install osmium-tool
 
@@ -102,7 +104,7 @@ You could download the entire [latest full-planet-full-history pbf](http://plane
 
 For a smaller download, you can browse by region for an `.osh.pbf` file in the "internal" area of
 https://osm-internal.download.geofabrik.de/ (their "public downloads" don't have history files).
-For example, [Regierungsbezirk Karlsruhe] (https://osm-internal.download.geofabrik.de/europe/germany/baden-wuerttemberg/karlsruhe-regbez.html) is 291 MB.
+For example, [Regierungsbezirk Karlsruhe](https://osm-internal.download.geofabrik.de/europe/germany/baden-wuerttemberg/karlsruhe-regbez.html) is 291 MB.
 
 Be sure to get the `.osh.pbf` history file, not `.osm.pbf` current data.
 
