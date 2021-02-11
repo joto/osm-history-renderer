@@ -22,9 +22,6 @@ LDFLAGS += -lexpat -lbz2
 # compile & link against postgres to have database access
 LDFLAGS += -lpq
 
-# compile & link against proj4 for converting wgs84 to sperical mercator
-LDFLAGS += -lproj
-
 # compile &  link against libs needed for protobuf reading and writing
 LDFLAGS += -lz -lpthread
 
