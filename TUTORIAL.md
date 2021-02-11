@@ -106,16 +106,8 @@ next we'll get that data into the database. Oh wait: which database? We'll first
     sudo -u postgres createdb -EUTF8 -O$USER $USER
     echo 'CREATE EXTENSION hstore' | sudo -u postgres psql $USER
     echo 'CREATE EXTENSION btree_gist' | sudo -u postgres psql $USER
-    sudo -u postgres psql $USER </usr/share/postgresql/9.1/contrib/postgis-1.5/postgis.sql
-    sudo -u postgres psql $USER </usr/share/postgresql/9.1/contrib/postgis-1.5/spatial_ref_sys.sql
-    echo "GRANT ALL ON geometry_columns TO $USER" | sudo -u postgres psql $USER
-    echo "GRANT ALL ON spatial_ref_sys TO $USER" | sudo -u postgres psql $USER
+    echo 'CREATE EXTENSION postgis' | sudo -u postgres psql $USER
 
-Note that the location of the sql files might vary with your system. If these two lines return an error, check the directory structure on your machine.
-You might also have to make your database aware of the 900913 projection used by the importer - many versions of PostGIS are aware of this projection out of the box, but if during import you get an error message saying "invalid SRID" then get https://github.com/openstreetmap/osm2pgsql/blob/master/900913.sql and apply by running
-
-    sudo -u postgres psql $USER -f 900913.sql
-    
 ## importing data
 now you're ready to connect to your database:
 

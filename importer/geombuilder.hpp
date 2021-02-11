@@ -118,7 +118,7 @@ public:
 
         // enforce srid
         if (geom) {
-            geom->setSRID(900913);
+            geom->setSRID(3857);
         }
 
         return geom;

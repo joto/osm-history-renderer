@@ -103,7 +103,7 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
             HStore::format(cur->tags()) << '\t';
 
         if (cur->visible()) {
-            line << "SRID=900913;POINT(" << lon << ' ' << lat << ')';
+            line << "SRID=3857;POINT(" << lon << ' ' << lat << ')';
         } else {
             line << "\\N";
         }
@@ -308,7 +308,7 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
                     interior_calculator.getInteriorPoint(center);
 
                     // write interior point
-                    line << "SRID=900913;POINT(" << center.x << ' ' << center.x << ')';
+                    line << "SRID=3857;POINT(" << center.x << ' ' << center.x << ')';
                 } catch(geos::util::GEOSException e) {
                     std::cerr << "error calculating interior point: " << e.what() << std::endl;
                     line << "\\N";

@@ -9,25 +9,9 @@ CREATE TABLE hist_point (
     user_name text,
     valid_from timestamp without time zone,
     valid_to timestamp without time zone,
-    tags hstore
+    tags hstore,
+    geom geometry(Point, 3857)
 );
-SELECT AddGeometryColumn(
-    -- table name
-    'hist_point',
-
-    -- column name
-    'geom',
-
-    -- SRID (900913 = Spherical Mercator)
-    900913,
-
-    -- type
-    'POINT',
-
-    -- dimensions
-    2
-);
-
 
 DROP TABLE IF EXISTS hist_line CASCADE;
 CREATE TABLE hist_line (
@@ -40,25 +24,9 @@ CREATE TABLE hist_line (
     valid_from timestamp without time zone,
     valid_to timestamp without time zone,
     tags hstore,
-    z_order integer
+    z_order integer,
+    geom geometry(LineString, 3857)
 );
-SELECT AddGeometryColumn(
-    -- table name
-    'hist_line',
-
-    -- column name
-    'geom',
-
-    -- SRID (900913 = Spherical Mercator)
-    900913,
-
-    -- type
-    'LINESTRING',
-
-    -- dimensions
-    2
-);
-
 
 DROP TABLE IF EXISTS hist_polygon CASCADE;
 CREATE TABLE hist_polygon (
@@ -72,38 +40,8 @@ CREATE TABLE hist_polygon (
     valid_to timestamp without time zone,
     tags hstore,
     z_order integer,
-    area real
+    area real,
+    geom geometry(Polygon, 3857),
+    center geometry(Point, 3857)
 );
-SELECT AddGeometryColumn(
-    -- table name
-    'hist_polygon',
 
-    -- column name
-    'geom',
-
-    -- SRID (900913 = Spherical Mercator)
-    900913,
-
-    -- type -- needs to be changed to generic GEOMETRY later (maybe)
-    --'MULTIPOLYGON',
-    'POLYGON',
-
-    -- dimensions
-    2
-);
-SELECT AddGeometryColumn(
-    -- table name
-    'hist_polygon',
-
-    -- column name
-    'center',
-
-    -- SRID (900913 = Spherical Mercator)
-    900913,
-
-    -- type
-    'POINT',
-
-    -- dimensions
-    2
-);
