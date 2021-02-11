@@ -4,15 +4,12 @@
 #include <osmium/osm/node_ref_list.hpp>
 
 class MinorTimesCalculator {
-private:
-    Nodestore *m_nodestore;
-    bool m_isupdate;
-    bool m_showerrors;
 
-protected:
-    MinorTimesCalculator(Nodestore *nodestore, bool isUpdate): m_nodestore(nodestore), m_isupdate(isUpdate), m_showerrors(false) {}
+    Nodestore *m_nodestore;
 
 public:
+    MinorTimesCalculator(Nodestore *nodestore): m_nodestore(nodestore) {}
+
     struct MinorTimesInfo {
         time_t t;
         osmium::user_id_type uid;
@@ -62,16 +59,6 @@ public:
     std::vector<MinorTimesInfo> *forWay(const osmium::NodeRefList &nodes, time_t from) {
         return forWay(nodes, from, 0);
     }
-};
-
-class ImportMinorTimesCalculator : public MinorTimesCalculator {
-public:
-    ImportMinorTimesCalculator(Nodestore *nodestore) : MinorTimesCalculator(nodestore, false) {}
-};
-
-class UpdateMinorTimesCalculator : public MinorTimesCalculator {
-public:
-    UpdateMinorTimesCalculator(Nodestore *nodestore) : MinorTimesCalculator(nodestore, true) {}
 };
 
 #endif // IMPORTER_MINORTIMESCALCULATOR_HPP
