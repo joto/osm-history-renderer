@@ -10,6 +10,27 @@
 
 #include "project.hpp"
 
+#include <osmium/osm/node_ref_list.hpp>
+#include <osmium/geom/geos.hpp>
+
+#include <geos/geom/GeometryFactory.h>
+#include <geos/geom/PrecisionModel.h>
+#include <geos/geom/Coordinate.h>
+#include <geos/geom/CoordinateSequence.h>
+#include <geos/geom/CoordinateSequenceFactory.h>
+#include <geos/geom/Point.h>
+#include <geos/geom/LinearRing.h>
+#include <geos/geom/Polygon.h>
+#include <geos/geom/MultiPolygon.h>
+
+#include <iomanip>
+
+inline geos::geom::GeometryFactory* geos_geometry_factory() {
+    static geos::geom::PrecisionModel pm;
+    static auto factory = geos::geom::GeometryFactory::create(&pm, -1);
+    return factory.get();
+}
+
 class GeomBuilder {
 private:
     Nodestore *m_nodestore;
@@ -21,18 +42,18 @@ protected:
     GeomBuilder(Nodestore *nodestore, DbAdapter *adapter, bool isUpdate): m_nodestore(nodestore), m_adapter(adapter), m_isupdate(isUpdate), m_debug(false), m_showerrors(false) {}
 
 public:
-    geos::geom::Geometry* forWay(const Osmium::OSM::WayNodeList &nodes, time_t t, bool looksLikePolygon) {
+    geos::geom::Geometry* forWay(const osmium::NodeRefList &nodes, time_t t, bool looksLikePolygon) {
         // shorthand to the geometry factory
-        geos::geom::GeometryFactory *f = Osmium::Geometry::geos_geometry_factory();
+        geos::geom::GeometryFactory *f = geos_geometry_factory();
 
         // pointer to coordinate vector
         std::vector<geos::geom::Coordinate> *c = new std::vector<geos::geom::Coordinate>();
 
         // iterate over all nodes
-        Osmium::OSM::WayNodeList::const_iterator end = nodes.end();
-        for(Osmium::OSM::WayNodeList::const_iterator it = nodes.begin(); it != end; ++it) {
+        auto end = nodes.end();
+        for (auto it = nodes.begin(); it != end; ++it) {
             // the id
-            osm_object_id_t id = it->ref();
+            osmium::object_id_type id = it->ref();
 
             // was the node found in the store?
             bool found;

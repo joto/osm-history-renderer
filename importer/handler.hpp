@@ -5,9 +5,8 @@
 
 #include <libpq-fe.h>
 
-#include <osmium.hpp>
-#include <osmium/handler/progress.hpp>
-#include <osmium/osm/types.hpp>
+#include <osmium/diff_handler.hpp>
+#include <osmium/osm.hpp>
 
 #include <geos/algorithm/InteriorPointArea.h>
 #include <geos/io/WKBWriter.h>
@@ -20,7 +19,6 @@
 #include "nodestore/stl.hpp"
 #include "nodestore/sparse.hpp"
 
-#include "entitytracker.hpp"
 #include "polygonidentifyer.hpp"
 #include "zordercalculator.hpp"
 #include "hstore.hpp"
@@ -30,12 +28,13 @@
 #include "sorttest.hpp"
 #include "project.hpp"
 
+#include <memory>
 
-class ImportHandler : public Osmium::Handler::Base {
+class ImportHandler : public osmium::diff_handler::DiffHandler {
 private:
-    Osmium::Handler::Progress m_progress;
-    EntityTracker<Osmium::OSM::Node> m_node_tracker;
-    EntityTracker<Osmium::OSM::Way> m_way_tracker;
+//    Osmium::Handler::Progress m_progress;
+//    EntityTracker<osmium::Node> m_node_tracker;
+//    EntityTracker<osmium::Way> m_way_tracker;
 
     Nodestore *m_store;
     DbAdapter m_adapter;
@@ -51,24 +50,25 @@ private:
     std::string m_dsn, m_prefix;
     bool m_debug, m_storeerrors, m_interior, m_keepLatLng;
 
-    std::map<osm_user_id_t, std::string> m_username_map;
-    typedef std::pair<osm_user_id_t, std::string> username_pair_t;
+    std::map<osmium::user_id_type, std::string> m_username_map;
+    typedef std::pair<osmium::user_id_type, std::string> username_pair_t;
 
 
-    void write_node() {
-        const shared_ptr<Osmium::OSM::Node const> next = m_node_tracker.next();
-        const shared_ptr<Osmium::OSM::Node const> cur = m_node_tracker.cur();
+    void write_node(const osmium::DiffNode& node) {
+//        const std::shared_ptr<osmium::Node const> next = m_node_tracker.next();
+//        const std::shared_ptr<osmium::Node const> cur = m_node_tracker.cur();
+        auto cur = &node.curr();
 
         if(m_debug) {
             std::cout << "node n" << cur->id() << 'v' << cur->version() << " at tstamp " << cur->timestamp() << " (" << Timestamp::format(cur->timestamp()) << ")" << std::endl;
         }
 
-        std::string valid_from(cur->timestamp_as_string());
+        std::string valid_from(cur->timestamp().to_iso());
         std::string valid_to("\\N");
 
         // if this is another version of the same entity, the end-timestamp of the current entity is the timestamp of the next one
-        if(m_node_tracker.next_is_same_entity()) {
-            valid_to = next->timestamp_as_string();
+        if(!node.last()) {
+            valid_to = node.next().timestamp().to_iso();
         }
 
         // if the current version is deleted, it's end-timestamp is the same as its creation-timestamp
@@ -79,10 +79,10 @@ private:
         // some xml-writers write deleted nodes without corrdinates, some write 0/0 as coorinate
         // default to 0/0 for those input nodes which dosn't carry corrdinates with them
         double lon = 0, lat = 0;
-        if(cur->position().defined())
+        if(cur->location().valid())
         {
-            lon = cur->lon();
-            lat = cur->lat();
+            lon = cur->location().lon();
+            lat = cur->location().lat();
         }
 
         // if this node is not-deleted (ie visible), write it to the nodestore
@@ -123,9 +123,11 @@ private:
         m_point.copy(line.str());
     }
 
-    void write_way() {
-        const shared_ptr<Osmium::OSM::Way const> next = m_way_tracker.next();
-        const shared_ptr<Osmium::OSM::Way const> cur = m_way_tracker.cur();
+    void write_way(const osmium::DiffWay& way) {
+//        const std::shared_ptr<osmium::Way const> next = m_way_tracker.next();
+//        const std::shared_ptr<osmium::Way const> cur = m_way_tracker.cur();
+        auto next = &way.next();
+        auto cur = &way.curr();
 
         if(m_debug) {
             std::cout << "way w" << cur->id() << 'v' << cur->version() << " at tstamp " << cur->timestamp() << " (" << Timestamp::format(cur->timestamp()) << ")" << std::endl;
@@ -136,7 +138,7 @@ private:
 
         std::vector<MinorTimesCalculator::MinorTimesInfo> *minor_times = NULL;
         if(cur->visible()) {
-            if(m_way_tracker.next_is_same_entity()) {
+            if(!way.last()) {
                 if(cur->timestamp() > next->timestamp()) {
                     if(m_storeerrors) {
                         std::cerr << "inverse timestamp-order in way " << cur->id() << " between v" << cur->version() << " and v" << next->version() << ", skipping minor ways" << std::endl;
@@ -157,7 +159,7 @@ private:
         }
 
         // if this is another version of the same entity, the end-timestamp of the current entity is the timestamp of the next one
-        else if(m_way_tracker.next_is_same_entity()) {
+        else if(!way.last()) {
             valid_to = next->timestamp();
         }
 
@@ -168,6 +170,7 @@ private:
 
         // write the main way version
         write_way_to_db(
+            way,
             cur->id(),
             cur->version(),
             0 /*minor*/,
@@ -192,7 +195,7 @@ private:
 
                 valid_from = (*it).t;
                 if(it == end-1) {
-                    if(m_way_tracker.next_is_same_entity()) {
+                    if(!way.last()) {
                         valid_to = next->timestamp();
                     } else {
                         valid_to = 0;
@@ -202,10 +205,11 @@ private:
                 }
 
                 time_t t = (*it).t;
-                osm_user_id_t uid = (*it).uid;
+                osmium::user_id_type uid = (*it).uid;
                 const char* user = m_username_map[ uid ].c_str();
 
                 write_way_to_db(
+                    way,
                     cur->id(),
                     cur->version(),
                     minor,
@@ -226,17 +230,18 @@ private:
     }
 
     void write_way_to_db(
-        osm_object_id_t id,
-        osm_version_t version,
-        osm_version_t minor,
+        const osmium::DiffWay& way,
+        osmium::object_id_type id,
+        osmium::object_version_type version,
+        osmium::object_version_type minor,
         bool visible,
-        osm_user_id_t user_id,
+        osmium::user_id_type user_id,
         const char* user_name,
         time_t timestamp,
         time_t valid_from,
         time_t valid_to,
-        const Osmium::OSM::TagList &tags,
-        const Osmium::OSM::WayNodeList &nodes
+        const osmium::TagList &tags,
+        const osmium::NodeRefList &nodes
     ) {
         if(m_debug) {
             std::cerr << "forging geometry of way " << id << 'v' << version << '.' << minor << " at tstamp " << timestamp << std::endl;
@@ -271,11 +276,11 @@ private:
 
         if(geom == NULL) {
             // this entity is deleted, we have no nd-refs and no tags from it to devide whether it once was a line or an areas
-            if(m_way_tracker.prev_is_same_entity()) {
+            if(!way.last()) {
                 // if we have a previous version of this way (which we should have or this way has already been deleted in its initial version)
                 // we can use the previous version to decide between line and area
 
-                const shared_ptr<Osmium::OSM::Way const> prev = m_way_tracker.prev();
+                auto prev = &way.prev();
 
                 bool looksLikePolygon = PolygonIdentifyer::looksLikePolygon(prev->tags());
                 geom = m_geom.forWay(prev->nodes(), prev->timestamp(), looksLikePolygon);
@@ -343,15 +348,16 @@ private:
 
 public:
     ImportHandler(Nodestore *nodestore):
-            m_progress(),
-            m_node_tracker(),
+//            m_progress(),
+//            m_node_tracker(),
             m_store(nodestore),
             m_adapter(),
             m_geom(m_store, &m_adapter),
             m_mtimes(m_store, &m_adapter),
             m_sorttest(),
             wkb(),
-            m_prefix("hist_") {}
+            m_prefix("hist_") {
+    }
 
     ~ImportHandler() {}
 
@@ -409,7 +415,7 @@ public:
 
 
 
-    void init(Osmium::OSM::Meta& meta) {
+    void init() {
         if(m_debug) {
             std::cerr << "connecting to database using dsn: " << m_dsn << std::endl;
         }
@@ -432,13 +438,13 @@ public:
         m_line.open(m_dsn, m_prefix, "line");
         m_polygon.open(m_dsn, m_prefix, "polygon");
 
-        m_progress.init(meta);
+//        m_progress.init(meta);
 
         wkb.setIncludeSRID(true);
     }
 
     void final() {
-        m_progress.final();
+//        m_progress.final();
 
         std::cerr << "closing point-table..." << std::endl;
         m_point.close();
@@ -470,47 +476,47 @@ public:
 
 
 
-    void node(const shared_ptr<Osmium::OSM::Node const>& node) {
-        m_sorttest.test(node);
-        m_node_tracker.feed(node);
+    void node(const osmium::DiffNode& node) {
+        m_sorttest.test(&node.curr());
+//        m_node_tracker.feed(node);
 
         // we're always writing the one-off node
+//        if(m_node_tracker.has_cur()) {
+            write_node(node);
+ //       }
+
+//        m_node_tracker.swap();
+//        m_progress.node(node);
+    }
+
+/*    void after_nodes() {
         if(m_node_tracker.has_cur()) {
             write_node();
         }
 
         m_node_tracker.swap();
-        m_progress.node(node);
-    }
+    }*/
 
-    void after_nodes() {
-        if(m_node_tracker.has_cur()) {
-            write_node();
-        }
-
-        m_node_tracker.swap();
-    }
-
-    void way(const shared_ptr<Osmium::OSM::Way const>& way) {
-        m_sorttest.test(way);
-        m_way_tracker.feed(way);
+    void way(const osmium::DiffWay& way) {
+        m_sorttest.test(&way.curr());
+   //     m_way_tracker.feed(way);
 
         // we're always writing the one-off way
+//        if(m_way_tracker.has_cur()) {
+            write_way(way);
+ //       }
+
+  //      m_way_tracker.swap();
+//        m_progress.way(way);
+    }
+
+/*    void after_ways() {
         if(m_way_tracker.has_cur()) {
             write_way();
         }
 
         m_way_tracker.swap();
-        m_progress.way(way);
-    }
-
-    void after_ways() {
-        if(m_way_tracker.has_cur()) {
-            write_way();
-        }
-
-        m_way_tracker.swap();
-    }
+    }*/
 };
 
 #endif // IMPORTER_HANDLER_HPP

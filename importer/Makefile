@@ -7,7 +7,8 @@
 #CXX = g++
 CXX = clang++
 
-CXXFLAGS = -g -O3 -Wall -Wextra -pedantic
+CXXFLAGS = -std=c++11 -g -O3 -Wall -Wextra -pedantic
+
 CXXFLAGS += `getconf LFS_CFLAGS`
 #CXXFLAGS += -Wredundant-decls -Wdisabled-optimization
 #CXXFLAGS += -Wpadded -Winline
@@ -16,7 +17,7 @@ CXXFLAGS += `getconf LFS_CFLAGS`
 CXXFLAGS += -I/usr/include/postgresql/ -I/usr/include/libxml2/
 
 # compile & link against expat to have xml reading support
-LDFLAGS += -lexpat
+LDFLAGS += -lexpat -lbz2
 
 # compile & link against postgres to have database access
 LDFLAGS += -lpq
@@ -25,7 +26,7 @@ LDFLAGS += -lpq
 LDFLAGS += -lproj
 
 # compile &  link against libs needed for protobuf reading and writing
-LDFLAGS += -lz -lprotobuf-lite -losmpbf -lpthread
+LDFLAGS += -lz -lpthread
 
 # compile &  link against geos for multipolygon extracts
 CXXFLAGS += -DOSMIUM_WITH_GEOS
@@ -35,7 +36,7 @@ LDFLAGS += -lgeos
 
 all: osm-history-importer
 
-osm-history-importer: importer.cpp handler.hpp entitytracker.hpp nodestore.hpp nodestore/stl.hpp nodestore/sparse.hpp polygonidentifyer.hpp zordercalculator.hpp sorttest.hpp project.hpp
+osm-history-importer: importer.cpp handler.hpp nodestore.hpp nodestore/stl.hpp nodestore/sparse.hpp polygonidentifyer.hpp zordercalculator.hpp sorttest.hpp project.hpp
 	$(CXX) $(CXXFLAGS) -o $@ $< $(LDFLAGS)
 
 install:

@@ -61,12 +61,12 @@ public:
     /**
      * format a taglist as external hstore noration
      */
-    static std::string format(const Osmium::OSM::TagList& tags) {
+    static std::string format(const osmium::TagList& tags) {
         // SPEED: instead of stringstream, which does dynamic allocation, use a fixed buffer
         std::stringstream hstore;
 
         // iterate over all tags
-        for(Osmium::OSM::TagList::const_iterator it = tags.begin(); it != tags.end(); ++it) {
+        for(auto it = tags.begin(); it != tags.end(); ++it) {
             // escape key and value
             std::string k = escape(it->key());
             std::string v = escape(it->value());
@@ -75,7 +75,7 @@ public:
             hstore << '"' << k << "\"=>\"" << v << '"';
 
             // if necessary, add a delimiter
-            if(it+1 != tags.end()) {
+            if(std::next(it) != tags.end()) {
                 hstore << ',';
             }
         }

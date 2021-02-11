@@ -16,6 +16,12 @@
 #ifndef IMPORTER_NODESTORE_HPP
 #define IMPORTER_NODESTORE_HPP
 
+#include <osmium/osm/types.hpp>
+
+#include <map>
+#include <memory>
+#include <utility>
+
 /**
  * Abstract baseclass for all nodestores
  */
@@ -27,7 +33,7 @@ public:
     struct Nodeinfo {
         double lat;
         double lon;
-        osm_user_id_t uid;
+        osmium::user_id_type uid;
     };
 
     /**
@@ -53,7 +59,7 @@ public:
     /**
      * shared ptr to a timemap
      */
-    typedef boost::shared_ptr< timemap > timemap_ptr;
+    typedef std::shared_ptr< timemap > timemap_ptr;
 
 protected:
     /**
@@ -109,12 +115,12 @@ public:
     /**
      * record information about a node
      */
-    virtual void record(osm_object_id_t id, osm_user_id_t uid, time_t t, double lon, double lat) = 0;
+    virtual void record(osmium::object_id_type id, osmium::user_id_type uid, time_t t, double lon, double lat) = 0;
 
     /**
      * retrieve all information about a node, indexed by time
      */
-    virtual timemap_ptr lookup(osm_object_id_t id, bool &found) = 0;
+    virtual timemap_ptr lookup(osmium::object_id_type id, bool &found) = 0;
 
     /**
      * lookup the version of a node that was valid at time_t t
@@ -123,7 +129,7 @@ public:
      * if found != true, the returned value is identical to nullinfo and
      * should not be used.
      */
-    virtual Nodeinfo lookup(osm_object_id_t id, time_t t, bool &found) = 0;
+    virtual Nodeinfo lookup(osmium::object_id_type id, time_t t, bool &found) = 0;
 };
 
 #endif // IMPORTER_NODESTORE_HPP

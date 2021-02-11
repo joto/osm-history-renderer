@@ -8,6 +8,11 @@
 
 #include <libpq-fe.h>
 
+#include <iostream>
+#include <istream>
+#include <stdexcept>
+#include <string>
+
 /**
  * Controls a connection to the database
  */
