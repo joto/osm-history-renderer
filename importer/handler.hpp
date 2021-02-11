@@ -13,7 +13,6 @@
 
 #include "dbconn.hpp"
 #include "dbcopyconn.hpp"
-#include "dbadapter.hpp"
 
 #include "nodestore.hpp"
 #include "nodestore/stl.hpp"
@@ -33,7 +32,6 @@
 class ImportHandler : public osmium::diff_handler::DiffHandler {
 
     Nodestore *m_store;
-    DbAdapter m_adapter;
     ImportGeomBuilder m_geom;
     ImportMinorTimesCalculator m_mtimes;
     SortTest m_sorttest;
@@ -334,9 +332,8 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
 public:
     ImportHandler(Nodestore *nodestore):
             m_store(nodestore),
-            m_adapter(),
-            m_geom(m_store, &m_adapter),
-            m_mtimes(m_store, &m_adapter),
+            m_geom(m_store),
+            m_mtimes(m_store),
             m_sorttest(),
             wkb(),
             m_prefix("hist_") {

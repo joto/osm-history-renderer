@@ -6,12 +6,11 @@
 class MinorTimesCalculator {
 private:
     Nodestore *m_nodestore;
-    DbAdapter *m_adapter;
     bool m_isupdate;
     bool m_showerrors;
 
 protected:
-    MinorTimesCalculator(Nodestore *nodestore, DbAdapter *adapter, bool isUpdate): m_nodestore(nodestore), m_adapter(adapter), m_isupdate(isUpdate), m_showerrors(false) {}
+    MinorTimesCalculator(Nodestore *nodestore, bool isUpdate): m_nodestore(nodestore), m_isupdate(isUpdate), m_showerrors(false) {}
 
 public:
     struct MinorTimesInfo {
@@ -67,12 +66,12 @@ public:
 
 class ImportMinorTimesCalculator : public MinorTimesCalculator {
 public:
-    ImportMinorTimesCalculator(Nodestore *nodestore, DbAdapter *adapter) : MinorTimesCalculator(nodestore, adapter, false) {}
+    ImportMinorTimesCalculator(Nodestore *nodestore) : MinorTimesCalculator(nodestore, false) {}
 };
 
 class UpdateMinorTimesCalculator : public MinorTimesCalculator {
 public:
-    UpdateMinorTimesCalculator(Nodestore *nodestore, DbAdapter *adapter) : MinorTimesCalculator(nodestore, adapter, true) {}
+    UpdateMinorTimesCalculator(Nodestore *nodestore) : MinorTimesCalculator(nodestore, true) {}
 };
 
 #endif // IMPORTER_MINORTIMESCALCULATOR_HPP

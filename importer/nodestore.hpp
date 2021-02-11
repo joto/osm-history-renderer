@@ -1,9 +1,7 @@
 /**
  * During the import and update process, nodes are read from the input
- * file. The corrdinates from those nodes are stored in-memory for very
- * fast access. During the updated process, information of nodes may be
- * requested that is not contained in the input file. This is done using
- * the DbAdapter.
+ * file. The coordinates from those nodes are stored in-memory for very
+ * fast access.
  *
  * There are several implementations of the Nodestore, as during import
  * it's the main memory consumer and during the import the memory

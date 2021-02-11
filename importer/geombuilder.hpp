@@ -34,12 +34,11 @@ inline geos::geom::GeometryFactory* geos_geometry_factory() {
 class GeomBuilder {
 
     Nodestore *m_nodestore;
-    DbAdapter *m_adapter;
     bool m_isupdate, m_keepLatLng;
     bool m_debug, m_showerrors;
 
 protected:
-    GeomBuilder(Nodestore *nodestore, DbAdapter *adapter, bool isUpdate): m_nodestore(nodestore), m_adapter(adapter), m_isupdate(isUpdate), m_debug(false), m_showerrors(false) {}
+    GeomBuilder(Nodestore *nodestore, bool isUpdate): m_nodestore(nodestore), m_isupdate(isUpdate), m_debug(false), m_showerrors(false) {}
 
 public:
     geos::geom::Geometry* forWay(const osmium::NodeRefList &nodes, time_t t, bool looksLikePolygon) {
@@ -149,12 +148,12 @@ public:
 
 class ImportGeomBuilder : public GeomBuilder {
 public:
-    ImportGeomBuilder(Nodestore *nodestore, DbAdapter *adapter) : GeomBuilder(nodestore, adapter, false) {}
+    ImportGeomBuilder(Nodestore *nodestore) : GeomBuilder(nodestore, false) {}
 };
 
 class UpdateGeomBuilder : public GeomBuilder {
 public:
-    UpdateGeomBuilder(Nodestore *nodestore, DbAdapter *adapter) : GeomBuilder(nodestore, adapter, true) {}
+    UpdateGeomBuilder(Nodestore *nodestore) : GeomBuilder(nodestore, true) {}
 };
 
 #endif // IMPORTER_GEOMBUILDER_HPP
