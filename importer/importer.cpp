@@ -25,29 +25,36 @@
  */
 int main(int argc, char *argv[]) {
     // local variables for the options/switches on the commandline
-    std::string filename, nodestore = "stl", dsn, prefix = "hist_";
-    bool printDebugMessages = false, printStoreErrors = false, calculateInterior = false;
-    bool showHelp = false, keepLatLng = false;
+    std::string filename;
+    std::string nodestore{"stl"};
+    std::string dsn;
+    std::string prefix{"hist_"};
+    bool printDebugMessages = false;
+    bool printStoreErrors = false;
+    bool calculateInterior = false;
+    bool showHelp = false;
+    bool keepLatLng = false;
 
     // options configuration array for getopt
     static struct option long_options[] = {
-        {"help",                no_argument, 0, 'h'},
-        {"debug",               no_argument, 0, 'd'},
-        {"store-errors",        no_argument, 0, 'e'},
-        {"interior",            no_argument, 0, 'i'},
-        {"latlng",              no_argument, 0, 'l'},
-        {"latlon",              no_argument, 0, 'l'},
-        {"nodestore",           required_argument, 0, 'S'},
-        {"dsn",                 required_argument, 0, 'D'},
-        {"prefix",              required_argument, 0, 'P'},
-        {0, 0, 0, 0}
+        {"help",         no_argument, nullptr, 'h'},
+        {"debug",        no_argument, nullptr, 'd'},
+        {"store-errors", no_argument, nullptr, 'e'},
+        {"interior",     no_argument, nullptr, 'i'},
+        {"latlng",       no_argument, nullptr, 'l'},
+        {"latlon",       no_argument, nullptr, 'l'},
+        {"nodestore",    required_argument, nullptr, 'S'},
+        {"dsn",          required_argument, nullptr, 'D'},
+        {"prefix",       required_argument, nullptr, 'P'},
+        {nullptr, 0, nullptr, 0}
     };
 
     // walk through the options
-    while(1) {
-        int c = getopt_long(argc, argv, "hdeilS:D:P:", long_options, 0);
-        if (c == -1)
+    while (1) {
+        const int c = getopt_long(argc, argv, "hdeilS:D:P:", long_options, nullptr);
+        if (c == -1) {
             break;
+        }
 
         switch (c) {
             // show the help
@@ -95,7 +102,7 @@ int main(int argc, char *argv[]) {
     }
 
     // if help was requested or the filename is missing
-    if(showHelp || argc - optind < 1) {
+    if (showHelp || argc - optind < 1) {
         // print a short description of the possible options
         std::cerr
             << "Usage: " << argv[0] << " [OPTIONS] OSMFILE" << std::endl
@@ -131,20 +138,21 @@ int main(int argc, char *argv[]) {
     osmium::io::File infile{filename};
 
     // create an instance of the import-handler
-    Nodestore *store;
-    if(nodestore == "sparse")
-        store = new NodestoreSparse();
-    else
-        store = new NodestoreStl();
+    std::unique_ptr<Nodestore> store;
+    if (nodestore == "sparse") {
+        store.reset(new NodestoreSparse());
+    } else {
+        store.reset(new NodestoreStl());
+    }
 
     // create an instance of the import-handler
-    ImportHandler handler(store);
+    ImportHandler handler{store.get()};
 
     // copy relevant settings to the handler
-    if(dsn.size()) {
+    if (dsn.size()) {
         handler.dsn(dsn);
     }
-    if(prefix.size()) {
+    if (prefix.size()) {
         handler.prefix(prefix);
     }
     handler.printDebugMessages(printDebugMessages);
@@ -159,8 +167,6 @@ int main(int argc, char *argv[]) {
     osmium::apply_diff(reader, handler);
 
     handler.final();
-
-    delete store;
 
     return 0;
 }

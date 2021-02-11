@@ -44,12 +44,11 @@ public:
         conn = PQconnectdb(dsn.c_str());
 
         // check, that the connection status is OK
-        if(PQstatus(conn) != CONNECTION_OK)
-        {
+        if (PQstatus(conn) != CONNECTION_OK) {
             // show the error message, close the connection and throw out
             std::cerr << PQerrorMessage(conn) << std::endl;
             PQfinish(conn);
-            throw std::runtime_error("connection to database failed");
+            throw std::runtime_error{"connection to database failed"};
         }
 
         // disable sync-commits
@@ -57,13 +56,12 @@ public:
         PGresult *res = PQexec(conn, "SET synchronous_commit TO off;");
 
         // check, that the query succeeded
-        if(PQresultStatus(res) != PGRES_COMMAND_OK)
-        {
+        if (PQresultStatus(res) != PGRES_COMMAND_OK) {
             // show the error message, close the connection and throw out
             std::cerr << PQerrorMessage(conn) << std::endl;
             PQclear(res);
             PQfinish(conn);
-            throw std::runtime_error("setting synchronous_commit to off failed");
+            throw std::runtime_error{"setting synchronous_commit to off failed"};
         }
 
         PQclear(res);
@@ -74,7 +72,7 @@ public:
      */
     void close() {
         // but only if there is a opened connection
-        if(!conn) return;
+        if (!conn) return;
 
         // close the connection
         PQfinish(conn);
@@ -92,13 +90,12 @@ public:
 
         // check, that the query succeeded
         ExecStatusType status = PQresultStatus(res);
-        if(status != PGRES_COMMAND_OK && status != PGRES_TUPLES_OK)
-        {
+        if (status != PGRES_COMMAND_OK && status != PGRES_TUPLES_OK) {
             // show the error message, close the connection and throw out
             std::cerr << PQresultErrorMessage(res) << std::endl;
             PQclear(res);
             PQfinish(conn);
-            throw std::runtime_error("command failed");
+            throw std::runtime_error{"command failed"};
         }
 
         PQclear(res);

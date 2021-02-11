@@ -32,7 +32,7 @@ inline geos::geom::GeometryFactory* geos_geometry_factory() {
 }
 
 class GeomBuilder {
-private:
+
     Nodestore *m_nodestore;
     DbAdapter *m_adapter;
     bool m_isupdate, m_keepLatLng;
@@ -60,18 +60,18 @@ public:
             Nodestore::Nodeinfo info = m_nodestore->lookup(id, t, found);
 
             // a missing node can just be skipped
-            if(!found)
+            if (!found)
                 continue;
 
             double lon = info.lon, lat = info.lat;
 
-            if(m_debug) {
+            if (m_debug) {
                 std::cerr << "node #" << id << " at tstamp " << t << " references node at POINT(" << std::setprecision(8) << lon << ' ' << lat << ')' << std::endl;
             }
 
             // create a coordinate-object and add it to the vector
-            if(!m_keepLatLng) {
-                if(!Project::toMercator(&lon, &lat))
+            if (!m_keepLatLng) {
+                if (!Project::toMercator(&lon, &lat))
                     continue;
             }
             c->push_back(geos::geom::Coordinate(lon, lat, DoubleNotANumber));
@@ -79,8 +79,8 @@ public:
 
         // if less then 2 nodes could be found in the store, no valid way
         // can be assembled and we need to skip it
-        if(c->size() < 2) {
-            if(m_showerrors) {
+        if (c->size() < 2) {
+            if (m_showerrors) {
                 std::cerr << "found only " << c->size() << " valid coordinates, skipping way" << std::endl;
             }
             delete c;
@@ -94,7 +94,7 @@ public:
         try {
             // tags say it could be a polygon, the way is closed and has
             // at least 3 *different* coordinates
-            if(looksLikePolygon && c->front() == c->back() && c->size() >= 4) {
+            if (looksLikePolygon && c->front() == c->back() && c->size() >= 4) {
                 // build a polygon
                 geom = f->createPolygon(
                     f->createLinearRing(
@@ -108,8 +108,8 @@ public:
                     f->getCoordinateSequenceFactory()->create(c)
                 );
             }
-        } catch(geos::util::GEOSException e) {
-            if(m_showerrors) {
+        } catch (const geos::util::GEOSException& e) {
+            if (m_showerrors) {
                 std::cerr << "error creating polygon: " << e.what() << std::endl;
             }
             delete c;
@@ -117,7 +117,7 @@ public:
         }
 
         // enforce srid
-        if(geom) {
+        if (geom) {
             geom->setSRID(900913);
         }
 

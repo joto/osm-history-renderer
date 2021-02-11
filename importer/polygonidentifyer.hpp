@@ -52,13 +52,13 @@ public:
      */
     static bool looksLikePolygon(const osmium::TagList& tags) {
         // iterate over all tags
-        for(auto it = tags.begin(); it != tags.end(); ++it) {
+        for (const auto& tag : tags) {
 
             // iterate over all known polygon-tags
-            for(int i = 0; polygons[i] != 0; i++) {
+            for (int i = 0; polygons[i] != 0; i++) {
 
                 // compare the tag name
-                if(0 == strcmp(polygons[i], it->key())) {
+                if (0 == std::strcmp(polygons[i], tag.key())) {
 
                     // yep, it looks like a polygon
                     return true;

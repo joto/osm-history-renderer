@@ -60,13 +60,12 @@ public:
         res = PQexec(conn, "BEGIN;");
 
         // check, that the query succeeded
-        if(PQresultStatus(res) != PGRES_COMMAND_OK)
-        {
+        if (PQresultStatus(res) != PGRES_COMMAND_OK) {
             // show the error message, close the connection and throw out
             std::cerr << PQerrorMessage(conn) << std::endl;
             PQclear(res);
             PQfinish(conn);
-            throw std::runtime_error("starting transaction failed");
+            throw std::runtime_error{"starting transaction failed"};
         }
 
         // clear the postgres result
@@ -83,13 +82,12 @@ public:
         res = PQexec(conn, cmd.str().c_str());
 
         // check, that the query succeeded
-        if(PQresultStatus(res) != PGRES_COMMAND_OK)
-        {
+        if (PQresultStatus(res) != PGRES_COMMAND_OK) {
             // show the error message, close the connection and throw out
             std::cerr << PQerrorMessage(conn) << std::endl;
             PQclear(res);
             PQfinish(conn);
-            throw std::runtime_error("truncating table failed");
+            throw std::runtime_error{"truncating table failed"};
         }
 
         // clear the command buffer and the result
@@ -103,13 +101,12 @@ public:
         res = PQexec(conn, cmd.str().c_str());
 
         // check, that the query succeeded
-        if(PQresultStatus(res) != PGRES_COPY_IN)
-        {
+        if (PQresultStatus(res) != PGRES_COPY_IN) {
             // show the error message, close the connection and throw out
             std::cerr << PQresultErrorMessage(res) << std::endl;
             PQclear(res);
             PQfinish(conn);
-            throw std::runtime_error("COPY FROM STDIN command failed");
+            throw std::runtime_error{"COPY FROM STDIN command failed"};
         }
 
         // clear result
@@ -122,18 +119,19 @@ public:
      */
     void close() {
         // but only if there is a opened connection
-        if(!conn) return;
+        if (!conn) {
+            return;
+        }
 
         // finish the COPY pipe
         int cpres = PQputCopyEnd(conn, NULL);
 
         // check, that the copying succeeded
-        if(-1 == cpres)
-        {
+        if (-1 == cpres) {
             // show the error message, close the connection and throw out
             std::cerr << PQerrorMessage(conn) << std::endl;
             PQfinish(conn);
-            throw std::runtime_error("COPY FROM STDIN finilization failed");
+            throw std::runtime_error{"COPY FROM STDIN finilization failed"};
         }
 
         // query results are stored in this result pointer
@@ -143,7 +141,7 @@ public:
         res = PQgetResult(conn);
 
         // check if we do have a result
-        while(res != NULL) {
+        while (res != NULL) {
             // get restult status and print messages accordingly
             ExecStatusType status = PQresultStatus(res);
             switch(status) {
@@ -158,7 +156,7 @@ public:
                     std::cerr << "PQresultStatus=" << status << std::endl;
                     PQclear(res);
                     PQfinish(conn);
-                    throw std::runtime_error("COPY FROM STDIN finilization failed");
+                    throw std::runtime_error{"COPY FROM STDIN finilization failed"};
             }
 
             // get the next result
@@ -170,13 +168,13 @@ public:
         res = PQexec(conn, "COMMIT;");
 
         // check, that the query succeeded
-        if(PQresultStatus(res) != PGRES_COMMAND_OK)
+        if (PQresultStatus(res) != PGRES_COMMAND_OK)
         {
             // show the error message, close the connection and throw out
             std::cerr << PQerrorMessage(conn) << std::endl;
             PQclear(res);
             PQfinish(conn);
-            throw std::runtime_error("comitting transaction failed");
+            throw std::runtime_error{"comitting transaction failed"};
         }
 
         PQclear(res);
@@ -193,11 +191,11 @@ public:
         int res = PQputCopyData(conn, data.c_str(), data.size());
 
         // check if the copying succeeded
-        if(-1 == res) {
+        if (-1 == res) {
             // show the error message, close the connection and throw out
             std::cerr << PQerrorMessage(conn) << std::endl;
             PQfinish(conn);
-            throw std::runtime_error("COPY data-transfer failed");
+            throw std::runtime_error{"COPY data-transfer failed"};
         }
     }
 };

@@ -27,7 +27,7 @@ private:
         std::stringstream escaped;
 
         // iterate over all chars, one by one
-        for(int i = 0; ; i++) {
+        for (int i = 0; ; i++) {
             // the current char
             char c = str[i];
 
@@ -62,26 +62,23 @@ public:
      * format a taglist as external hstore noration
      */
     static std::string format(const osmium::TagList& tags) {
-        // SPEED: instead of stringstream, which does dynamic allocation, use a fixed buffer
-        std::stringstream hstore;
+        std::string out;
 
-        // iterate over all tags
-        for(auto it = tags.begin(); it != tags.end(); ++it) {
-            // escape key and value
-            std::string k = escape(it->key());
-            std::string v = escape(it->value());
-
-            // add to string representation
-            hstore << '"' << k << "\"=>\"" << v << '"';
-
-            // if necessary, add a delimiter
-            if(std::next(it) != tags.end()) {
-                hstore << ',';
-            }
+        for (const auto& tag : tags) {
+            out += '"';
+            out += escape(tag.key());
+            out += "\"=>\"";
+            out += escape(tag.value());
+            out += '"';
+            out += ',';
         }
 
-        // return the generated string
-        return hstore.str();
+        if (!out.empty()) {
+            // remove trailing comma
+            out.resize(out.size() - 1);
+        }
+
+        return out;
     }
 };
 

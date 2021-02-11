@@ -51,7 +51,7 @@ private:
      * this method checks all those values against the tag-value
      */
     static bool isTagValueTrue(const char *tagvalue) {
-        return (0 == strcmp(tagvalue, "true") || 0 == strcmp(tagvalue, "yes") || 0 == strcmp(tagvalue, "1"));
+        return (0 == std::strcmp(tagvalue, "true") || 0 == std::strcmp(tagvalue, "yes") || 0 == std::strcmp(tagvalue, "1"));
     }
 
 public:
@@ -78,19 +78,19 @@ public:
         const char *boundary = tags.get_value_by_key("boundary");
 
         // if the way has a layer-tag
-        if(layer) {
+        if (layer) {
             // that tag contributes to the z-order with a factor of 10
             z_order = strtol(layer, NULL, 10) * 10;
         }
 
         // if it has a highway tag
-        if(highway) {
+        if (highway) {
 
             // iterate over the list of known highway-values
-            for(int i = 0; layers[i].highway != 0; i++) {
+            for (int i = 0; layers[i].highway != 0; i++) {
 
                 // look for a matching known value
-                if(0 == strcmp(layers[i].highway, highway)) {
+                if (0 == std::strcmp(layers[i].highway, highway)) {
 
                     // and copy over its offset & lowzoom value
                     z_order   += layers[i].offset;
@@ -101,26 +101,26 @@ public:
         }
 
         // if the way has a railway tag
-        if(railway) {
+        if (railway) {
             // raise its z-order by 5 and set the lowzoom flag
             z_order += 5;
             lowzoom = true;
         }
 
         // if it has a boundary=administrative tag
-        if(boundary && 0 == strcmp(boundary, "administrative")) {
+        if (boundary && 0 == std::strcmp(boundary, "administrative")) {
             // set the lowzoom flag
             lowzoom = true;
         }
 
         // if it has a bridge tag and it evaluates to true
-        if(bridge && isTagValueTrue(bridge)) {
+        if (bridge && isTagValueTrue(bridge)) {
             // raise its z-order by 10
             z_order += 10;
         }
 
         // if it has a tunnel tag and it evaluates to true
-        if(tunnel && isTagValueTrue(tunnel)) {
+        if (tunnel && isTagValueTrue(tunnel)) {
             // reduce its z-order by 10
             z_order -= 10;
         }

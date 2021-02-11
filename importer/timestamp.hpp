@@ -59,7 +59,7 @@ public:
     static std::string formatDb(const time_t time) {
         // return special string indicating a value of NULL in a postgres
         // copy pipe for a timestamp of 0
-        if(time == 0) {
+        if (time == 0) {
             return "\\N";
         }
 
