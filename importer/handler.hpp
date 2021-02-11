@@ -32,7 +32,7 @@
 class ImportHandler : public osmium::diff_handler::DiffHandler {
 
     Nodestore *m_store;
-    ImportGeomBuilder m_geom;
+    GeomBuilder m_geom;
     MinorTimesCalculator m_mtimes;
     SortTest m_sorttest;
 
