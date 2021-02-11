@@ -51,7 +51,7 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
         auto cur = &node.curr();
 
         if (m_debug) {
-            std::cout << "node n" << cur->id() << 'v' << cur->version() << " at tstamp " << cur->timestamp() << " (" << Timestamp::format(cur->timestamp()) << ")" << std::endl;
+            std::cout << "node n" << cur->id() << 'v' << cur->version() << " at tstamp " << cur->timestamp() << " (" << cur->timestamp().to_iso() << ")" << std::endl;
         }
 
         std::string valid_from{cur->timestamp().to_iso()};
@@ -79,7 +79,7 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
         // some osm-writers write invisible nodes with 0/0 coordinates which would screw up rendering, if not ignored in the nodestore
         // see https://github.com/MaZderMind/osm-history-renderer/issues/8
         if (cur->visible()) {
-            m_store->record(cur->id(), cur->uid(), cur->timestamp(), lon, lat);
+            m_store->record(cur->id(), cur->uid(), cur->timestamp().seconds_since_epoch(), lon, lat);
         }
 
         m_username_map.insert( username_pair_t(cur->uid(), std::string(cur->user()) ) );
@@ -117,10 +117,10 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
         auto cur = &way.curr();
 
         if (m_debug) {
-            std::cout << "way w" << cur->id() << 'v' << cur->version() << " at tstamp " << cur->timestamp() << " (" << Timestamp::format(cur->timestamp()) << ")" << std::endl;
+            std::cout << "way w" << cur->id() << 'v' << cur->version() << " at tstamp " << cur->timestamp().seconds_since_epoch() << " (" << cur->timestamp().to_iso() << ")" << std::endl;
         }
 
-        time_t valid_from = cur->timestamp();
+        time_t valid_from = cur->timestamp().seconds_since_epoch();
         time_t valid_to = 0;
 
         std::vector<MinorTimesCalculator::MinorTimesInfo> *minor_times = NULL;
@@ -132,11 +132,11 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
                     }
                 } else {
                     // collect minor ways between current and next
-                    minor_times = m_mtimes.forWay(cur->nodes(), cur->timestamp(), next->timestamp());
+                    minor_times = m_mtimes.forWay(cur->nodes(), cur->timestamp().seconds_since_epoch(), next->timestamp().seconds_since_epoch());
                 }
             } else {
                 // collect minor ways between current and the end
-                minor_times = m_mtimes.forWay(cur->nodes(), cur->timestamp());
+                minor_times = m_mtimes.forWay(cur->nodes(), cur->timestamp().seconds_since_epoch());
             }
         }
 
@@ -147,7 +147,7 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
 
         // if this is another version of the same entity, the end-timestamp of the current entity is the timestamp of the next one
         else if (!way.last()) {
-            valid_to = next->timestamp();
+            valid_to = next->timestamp().seconds_since_epoch();
         }
 
         // if the current version is deleted, it's end-timestamp is the same as its creation-timestamp
@@ -164,7 +164,7 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
             cur->visible(),
             cur->uid(),
             cur->user(),
-            cur->timestamp(),
+            cur->timestamp().seconds_since_epoch(),
             valid_from,
             valid_to,
             cur->tags(),
@@ -183,7 +183,7 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
                 valid_from = (*it).t;
                 if (it == end-1) {
                     if (!way.last()) {
-                        valid_to = next->timestamp();
+                        valid_to = next->timestamp().seconds_since_epoch();
                     } else {
                         valid_to = 0;
                     }

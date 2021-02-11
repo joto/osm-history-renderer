@@ -42,7 +42,7 @@ public:
 
     GeomBuilder(Nodestore *nodestore): m_nodestore(nodestore) {}
 
-    geos::geom::Geometry* forWay(const osmium::NodeRefList &nodes, time_t t, bool looksLikePolygon) {
+    geos::geom::Geometry* forWay(const osmium::NodeRefList &nodes, osmium::Timestamp timestamp, bool looksLikePolygon) {
         // shorthand to the geometry factory
         geos::geom::GeometryFactory *f = geos_geometry_factory();
 
@@ -57,7 +57,7 @@ public:
 
             // was the node found in the store?
             bool found;
-            Nodestore::Nodeinfo info = m_nodestore->lookup(id, t, found);
+            Nodestore::Nodeinfo info = m_nodestore->lookup(id, timestamp.seconds_since_epoch(), found);
 
             // a missing node can just be skipped
             if (!found)
@@ -66,7 +66,7 @@ public:
             double lon = info.lon, lat = info.lat;
 
             if (m_debug) {
-                std::cerr << "node #" << id << " at tstamp " << t << " references node at POINT(" << std::setprecision(8) << lon << ' ' << lat << ')' << std::endl;
+                std::cerr << "node #" << id << " at tstamp " << timestamp.seconds_since_epoch() << " references node at POINT(" << std::setprecision(8) << lon << ' ' << lat << ')' << std::endl;
             }
 
             // create a coordinate-object and add it to the vector
