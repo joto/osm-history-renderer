@@ -45,13 +45,13 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
     bool m_debug, m_storeerrors, m_interior, m_keepLatLng;
 
     std::map<osmium::user_id_type, std::string> m_username_map;
-    typedef std::pair<osmium::user_id_type, std::string> username_pair_t;
+    using username_pair_t = std::pair<osmium::user_id_type, std::string>;
 
     void write_node(const osmium::DiffNode& node) {
         auto cur = &node.curr();
 
         if (m_debug) {
-            std::cout << "node n" << cur->id() << 'v' << cur->version() << " at tstamp " << cur->timestamp() << " (" << cur->timestamp().to_iso() << ")" << std::endl;
+            std::cout << "node n" << cur->id() << 'v' << cur->version() << " at tstamp " << cur->timestamp() << " (" << cur->timestamp().to_iso() << ")\n";
         }
 
         std::string valid_from{cur->timestamp().to_iso()};
@@ -117,18 +117,18 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
         auto cur = &way.curr();
 
         if (m_debug) {
-            std::cout << "way w" << cur->id() << 'v' << cur->version() << " at tstamp " << cur->timestamp().seconds_since_epoch() << " (" << cur->timestamp().to_iso() << ")" << std::endl;
+            std::cout << "way w" << cur->id() << 'v' << cur->version() << " at tstamp " << cur->timestamp().seconds_since_epoch() << " (" << cur->timestamp().to_iso() << ")\n";
         }
 
         time_t valid_from = cur->timestamp().seconds_since_epoch();
         time_t valid_to = 0;
 
-        std::vector<MinorTimesCalculator::MinorTimesInfo> *minor_times = NULL;
+        std::vector<MinorTimesCalculator::MinorTimesInfo> *minor_times = nullptr;
         if (cur->visible()) {
             if (!way.last()) {
                 if (cur->timestamp() > next->timestamp()) {
                     if (m_storeerrors) {
-                        std::cerr << "inverse timestamp-order in way " << cur->id() << " between v" << cur->version() << " and v" << next->version() << ", skipping minor ways" << std::endl;
+                        std::cerr << "inverse timestamp-order in way " << cur->id() << " between v" << cur->version() << " and v" << next->version() << ", skipping minor ways\n";
                     }
                 } else {
                     // collect minor ways between current and next
@@ -177,7 +177,7 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
             const auto end = minor_times->end();
             for (auto it = minor_times->begin(); it != end; it++) {
                 if (m_debug) {
-                    std::cout << "minor way w" << cur->id() << 'v' << cur->version() << '.' << minor << " at tstamp " << (*it).t << " (" << Timestamp::format( (*it).t ) << ")" << std::endl;
+                    std::cout << "minor way w" << cur->id() << 'v' << cur->version() << '.' << minor << " at tstamp " << (*it).t << " (" << Timestamp::format( (*it).t ) << ")\n";
                 }
 
                 valid_from = (*it).t;
@@ -231,16 +231,16 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
         const osmium::NodeRefList &nodes
     ) {
         if (m_debug) {
-            std::cerr << "forging geometry of way " << id << 'v' << version << '.' << minor << " at tstamp " << timestamp << std::endl;
+            std::cerr << "forging geometry of way " << id << 'v' << version << '.' << minor << " at tstamp " << timestamp << "\n";
         }
 
-        geos::geom::Geometry* geom = NULL;
+        geos::geom::Geometry* geom = nullptr;
         if (visible) {
             bool looksLikePolygon = PolygonIdentifyer::looksLikePolygon(tags);
             geom = m_geom.forWay(nodes, timestamp, looksLikePolygon);
             if (!geom) {
                 if (m_debug) {
-                    std::cerr << "no valid geometry for way " << id << 'v' << version << '.' << minor << " at tstamp " << timestamp << std::endl;
+                    std::cerr << "no valid geometry for way " << id << 'v' << version << '.' << minor << " at tstamp " << timestamp << "\n";
                 }
                 return;
             }
@@ -261,7 +261,7 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
             HStore::format(tags) << '\t' <<
             ZOrderCalculator::calculateZOrder(tags) << '\t';
 
-        if (geom == NULL) {
+        if (geom == nullptr) {
             // this entity is deleted, we have no nd-refs and no tags from it to devide whether it once was a line or an areas
             if (!way.last()) {
                 // if we have a previous version of this way (which we should have or this way has already been deleted in its initial version)
@@ -275,7 +275,7 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
                 if (!geom) {
                     if (m_debug) {
                         std::cerr << "no valid geometry for way of " << prev->id() << 'v' << prev->version() << " which was consulted to determine if the deleted way " <<
-                            id << "v" << version << " once was an area or a line. skipping that double-deleted way." << std::endl;
+                            id << "v" << version << " once was an area or a line. skipping that double-deleted way.\n";
                     }
                     return;
                 }
@@ -310,7 +310,7 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
                     // write interior point
                     line << "SRID=3857;POINT(" << center.x << ' ' << center.x << ')';
                 } catch(geos::util::GEOSException e) {
-                    std::cerr << "error calculating interior point: " << e.what() << std::endl;
+                    std::cerr << "error calculating interior point: " << e.what() << "\n";
                     line << "\\N";
                 }
             } else {
@@ -395,12 +395,12 @@ public:
 
     void init() {
         if (m_debug) {
-            std::cerr << "connecting to database using dsn: " << m_dsn << std::endl;
+            std::cerr << "connecting to database using dsn: " << m_dsn << "\n";
         }
 
         m_general.open(m_dsn);
         if (m_debug) {
-            std::cerr << "running scheme/00-before.sql" << std::endl;
+            std::cerr << "running scheme/00-before.sql\n";
         }
 
         std::ifstream sqlfile{"scheme/00-before.sql"};
@@ -422,17 +422,17 @@ public:
     }
 
     void final() {
-        std::cerr << "closing point-table..." << std::endl;
+        std::cerr << "closing point-table...\n";
         m_point.close();
 
-        std::cerr << "closing line-table..." << std::endl;
+        std::cerr << "closing line-table...\n";
         m_line.close();
 
-        std::cerr << "closing polygon-table..." << std::endl;
+        std::cerr << "closing polygon-table...\n";
         m_polygon.close();
 
         if (m_debug) {
-            std::cerr << "running scheme/99-after.sql" << std::endl;
+            std::cerr << "running scheme/99-after.sql\n";
         }
 
         std::ifstream sqlfile{"scheme/99-after.sql"};
@@ -447,18 +447,18 @@ public:
         m_general.execfile(sqlfile);
 
         if (m_debug) {
-            std::cerr << "disconnecting from database" << std::endl;
+            std::cerr << "disconnecting from database\n";
         }
         m_general.close();
     }
 
     void node(const osmium::DiffNode& node) {
-        m_sorttest.test(&node.curr());
+        m_sorttest.test(node.curr());
         write_node(node);
     }
 
     void way(const osmium::DiffWay& way) {
-        m_sorttest.test(&way.curr());
+        m_sorttest.test(way.curr());
         write_way(way);
     }
 

@@ -6,22 +6,22 @@ private:
     /**
      * a map between the node-id and its map of node-versions and -times (timemap)
      */
-    typedef std::map< osmium::object_id_type, timemap_ptr > nodemap;
+    using nodemap = std::map<osmium::object_id_type, timemap_ptr>;
 
     /**
      * a pair of node-id and pointer to timemap
      */
-    typedef std::pair< osmium::object_id_type, timemap_ptr > nodepair;
+    using nodepair = std::pair<osmium::object_id_type, timemap_ptr>;
 
     /**
      * an iterator over the nodemap
      */
-    typedef std::map< osmium::object_id_type, timemap_ptr >::iterator nodemap_it;
+    using nodemap_it = nodemap::iterator;
 
     /**
      * the const-version of this iterator
      */
-    typedef std::map< osmium::object_id_type, timemap_ptr >::const_iterator nodemap_cit;
+    using nodemap_cit = nodemap::const_iterator;
 
     /**
      * main-storage of this nodestore: an instance of nodemap
@@ -29,17 +29,14 @@ private:
     nodemap m_nodemap;
 
 public:
-    NodestoreStl() : Nodestore(), m_nodemap() {}
-    ~NodestoreStl() {}
-
     void record(osmium::object_id_type id, osmium::user_id_type uid, time_t t, double lon, double lat) {
         Nodeinfo info = {lat, lon, uid};
 
         nodemap_it it = m_nodemap.find(id);
         timemap_ptr tmap;
 
-        if(it == m_nodemap.end()) {
-            if(isPrintingDebugMessages()) {
+        if (it == m_nodemap.end()) {
+            if (isPrintingDebugMessages()) {
                 std::cerr << "no timemap for node #" << id << ", creating new" << std::endl;
             }
 
@@ -50,19 +47,19 @@ public:
         }
 
         tmap->insert(timepair(t, info));
-        if(isPrintingDebugMessages()) {
+        if (isPrintingDebugMessages()) {
             std::cerr << "adding timepair for node #" << id << " at tstamp " << t << std::endl;
         }
     }
 
     timemap_ptr lookup(osmium::object_id_type id, bool &found) {
-        if(isPrintingDebugMessages()) {
+        if (isPrintingDebugMessages()) {
             std::cerr << "looking up timemap of node #" << id << std::endl;
         }
 
         nodemap_it nit = m_nodemap.find(id);
-        if(nit == m_nodemap.end()) {
-            if(isPrintingStoreErrors()) {
+        if (nit == m_nodemap.end()) {
+            if (isPrintingStoreErrors()) {
                 std::cerr << "no timemap for node #" << id << ", skipping node" << std::endl;
             }
             found = false;
@@ -74,18 +71,18 @@ public:
     }
 
     Nodeinfo lookup(osmium::object_id_type id, time_t t, bool &found) {
-        if(isPrintingDebugMessages()) {
+        if (isPrintingDebugMessages()) {
             std::cerr << "looking up information of node #" << id << " at tstamp " << t << std::endl;
         }
 
         timemap_ptr tmap = lookup(id, found);
-        if(!found) {
+        if (!found) {
             return nullinfo;
         }
         timemap_it tit = tmap->upper_bound(t);
 
-        if(tit == tmap->begin()) {
-            if(isPrintingStoreErrors()) {
+        if (tit == tmap->begin()) {
+            if (isPrintingStoreErrors()) {
                 std::cerr << "reference to node #" << id << " at tstamp " << t << " which is before the youngest available version of that node, using first version" << std::endl;
             }
         } else {

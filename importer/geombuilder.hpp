@@ -66,7 +66,7 @@ public:
             double lon = info.lon, lat = info.lat;
 
             if (m_debug) {
-                std::cerr << "node #" << id << " at tstamp " << timestamp.seconds_since_epoch() << " references node at POINT(" << std::setprecision(8) << lon << ' ' << lat << ')' << std::endl;
+                std::cerr << "node #" << id << " at tstamp " << timestamp.seconds_since_epoch() << " references node at POINT(" << std::setprecision(8) << lon << ' ' << lat << ")\n";
             }
 
             // create a coordinate-object and add it to the vector
@@ -81,10 +81,10 @@ public:
         // can be assembled and we need to skip it
         if (c->size() < 2) {
             if (m_showerrors) {
-                std::cerr << "found only " << c->size() << " valid coordinates, skipping way" << std::endl;
+                std::cerr << "found only " << c->size() << " valid coordinates, skipping way\n";
             }
             delete c;
-            return NULL;
+            return nullptr;
         }
 
         // the resulting geometry
@@ -100,7 +100,7 @@ public:
                     f->createLinearRing(
                         f->getCoordinateSequenceFactory()->create(c)
                     ),
-                    NULL
+                    nullptr
                 );
             } else {
                 // build a linestring
@@ -110,10 +110,10 @@ public:
             }
         } catch (const geos::util::GEOSException& e) {
             if (m_showerrors) {
-                std::cerr << "error creating polygon: " << e.what() << std::endl;
+                std::cerr << "error creating polygon: " << e.what() << "\n";
             }
             delete c;
-            return NULL;
+            return nullptr;
         }
 
         // enforce srid

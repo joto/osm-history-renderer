@@ -37,33 +37,33 @@ public:
     /**
      * map representing data stored for one node-version
      */
-    typedef std::map< time_t, Nodeinfo > timemap;
+    using timemap = std::map<time_t, Nodeinfo>;
 
     /**
      * a pair of a time and a nodeinfo stored in a timemap
      */
-    typedef std::pair< time_t, Nodeinfo > timepair;
+    using timepair = std::pair<time_t, Nodeinfo>;
 
     /**
      * iterator over a timemap
      */
-    typedef std::map< time_t, Nodeinfo >::iterator timemap_it;
+    using timemap_it = timemap::iterator;
 
     /**
      * constant iterator over a timemap
      */
-    typedef std::map< time_t, Nodeinfo >::const_iterator timemap_cit;
+    using timemap_cit = timemap::const_iterator;
 
     /**
      * shared ptr to a timemap
      */
-    typedef std::shared_ptr< timemap > timemap_ptr;
+    using timemap_ptr = std::shared_ptr<timemap>;
 
 protected:
     /**
      * a Nodeinfo that equals null, returned in case of an error
      */
-    const Nodeinfo nullinfo;
+    const Nodeinfo nullinfo{};
 
 private:
     /**
@@ -72,13 +72,10 @@ private:
      * because the ways may reference nodes that are not part of the
      * extract. Therefore this option may be switched on seperately
      */
-    bool m_debug, m_storeerrors;
+    bool m_debug = false;
+    bool m_storeerrors = false;
 
 public:
-    /**
-     * initialize a new nodestore
-     */
-    Nodestore() : nullinfo(), m_storeerrors(false) {}
 
     virtual ~Nodestore() {}
 

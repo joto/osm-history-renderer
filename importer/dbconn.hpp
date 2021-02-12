@@ -18,21 +18,15 @@
  */
 class DbConn {
 protected:
-    /**
-     * Postgres API handle
-     */
-    PGconn *conn;
+
+    PGconn *conn = nullptr;
 
 public:
-    /**
-     * Create a new, unconnected controller
-     */
-    DbConn() : conn(NULL) {}
 
     /**
      * Delete the controller and disconnect
      */
-    ~DbConn() {
+    ~DbConn() noexcept {
         close();
     }
 
@@ -40,14 +34,10 @@ public:
      * Connect the controller to a database specified by the dsn
      */
     void open(const std::string& dsn) {
-        // connect to the database
         conn = PQconnectdb(dsn.c_str());
 
-        // check, that the connection status is OK
         if (PQstatus(conn) != CONNECTION_OK) {
-            // show the error message, close the connection and throw out
-            std::cerr << PQerrorMessage(conn) << std::endl;
-            PQfinish(conn);
+            std::cerr << PQerrorMessage(conn) << "\n";
             throw std::runtime_error{"connection to database failed"};
         }
 
@@ -58,7 +48,7 @@ public:
         // check, that the query succeeded
         if (PQresultStatus(res) != PGRES_COMMAND_OK) {
             // show the error message, close the connection and throw out
-            std::cerr << PQerrorMessage(conn) << std::endl;
+            std::cerr << PQerrorMessage(conn) << "\n";
             PQclear(res);
             PQfinish(conn);
             throw std::runtime_error{"setting synchronous_commit to off failed"};
@@ -70,15 +60,14 @@ public:
     /**
      * Close the connection with the database
      */
-    void close() {
-        // but only if there is a opened connection
-        if (!conn) return;
+    void close() noexcept {
+        if (!conn) {
+            return;
+        }
 
-        // close the connection
         PQfinish(conn);
 
-        // nullify the connection handle
-        conn = NULL;
+        conn = nullptr;
     }
 
     /**
@@ -92,9 +81,8 @@ public:
         ExecStatusType status = PQresultStatus(res);
         if (status != PGRES_COMMAND_OK && status != PGRES_TUPLES_OK) {
             // show the error message, close the connection and throw out
-            std::cerr << PQresultErrorMessage(res) << std::endl;
+            std::cerr << PQresultErrorMessage(res) << "\n";
             PQclear(res);
-            PQfinish(conn);
             throw std::runtime_error{"command failed"};
         }
 

@@ -2,6 +2,10 @@
 #define IMPORTER_SORTTEST_HPP
 
 #include <osmium/osm/item_type.hpp>
+#include <osmium/osm/types.hpp>
+
+#include <iostream>
+#include <stdexcept>
 
 class SortTest {
     osmium::item_type last_type = osmium::item_type::undefined;
@@ -9,25 +13,22 @@ class SortTest {
     osmium::object_version_type last_version = 0;
 
 public:
-    void test(const osmium::OSMObject* obj) {
-        if (
-            (last_type > obj->type()) ||
-            (last_type == obj->type() && last_id > obj->id()) ||
-            (last_type == obj->type() && last_id == obj->id() && last_version > obj->version())
-        ) {
+    void test(const osmium::OSMObject& obj) {
+        if ((last_type > obj.type()) ||
+            (last_type == obj.type() && last_id > obj.id()) ||
+            (last_type == obj.type() && last_id == obj.id() && last_version > obj.version())) {
             std::cerr
-                << "your file is not sorted correctly (by type, id and version):" << std::endl
+                << "your file is not sorted correctly (by type, id and version):\n"
                 << " " << osmium::item_type_to_name(last_type) << " " << last_id << "v" << last_version << " comes before"
-                << " " << osmium::item_type_to_name(obj->type()) << " " << obj->id() << "v" << obj->version() << std::endl << std::endl
-                << "The history importer is not able to work with unsorted files." << std::endl
-                << "You can use osmosis to sort the file. (see: http://wiki.openstreetmap.org/wiki/Osmosis/Detailed_Usage#--sort_.28--s.29)" << std::endl;
+                << " " << osmium::item_type_to_name(obj.type()) << " " << obj.id() << "v" << obj.version()
+                << "\n\nThe history importer is not able to work with unsorted files.\n";
 
             throw new std::runtime_error{"file incorrectly sorted"};
         }
 
-        last_type = obj->type();
-        last_id = obj->id();
-        last_version = obj->version();
+        last_type = obj.type();
+        last_id = obj.id();
+        last_version = obj.version();
     }
 };
 

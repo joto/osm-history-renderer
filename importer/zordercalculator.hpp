@@ -35,10 +35,7 @@ static struct {
     { 8, "trunk_link",     true },
     { 8, "trunk",          true },
     { 9, "motorway_link",  true },
-    { 9, "motorway",       true },
-
-    // 0-value signals end-of-list
-    { 0, 0, 0 }
+    { 9, "motorway",       true }
 };
 
 /**
@@ -50,8 +47,10 @@ private:
      * different tag-values can make up a true-value: "1", "yes", "true"
      * this method checks all those values against the tag-value
      */
-    static bool isTagValueTrue(const char *tagvalue) {
-        return (0 == std::strcmp(tagvalue, "true") || 0 == std::strcmp(tagvalue, "yes") || 0 == std::strcmp(tagvalue, "1"));
+    static bool isTagValueTrue(const char *tagvalue) noexcept {
+        return 0 == std::strcmp(tagvalue, "true") ||
+               0 == std::strcmp(tagvalue, "yes") ||
+               0 == std::strcmp(tagvalue, "1");
     }
 
 public:
@@ -80,21 +79,17 @@ public:
         // if the way has a layer-tag
         if (layer) {
             // that tag contributes to the z-order with a factor of 10
-            z_order = strtol(layer, NULL, 10) * 10;
+            z_order = std::strtol(layer, nullptr, 10) * 10;
         }
 
         // if it has a highway tag
         if (highway) {
-
-            // iterate over the list of known highway-values
-            for (int i = 0; layers[i].highway != 0; i++) {
-
-                // look for a matching known value
-                if (0 == std::strcmp(layers[i].highway, highway)) {
+            for (const auto& layer : layers) {
+                if (0 == std::strcmp(layer.highway, highway)) {
 
                     // and copy over its offset & lowzoom value
-                    z_order   += layers[i].offset;
-                    lowzoom   = layers[i].lowzoom;
+                    z_order += layer.offset;
+                    lowzoom = layer.lowzoom;
                     break;
                 }
             }

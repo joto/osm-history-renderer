@@ -25,7 +25,6 @@
  */
 int main(int argc, char *argv[]) {
     // local variables for the options/switches on the commandline
-    std::string filename;
     std::string nodestore{"stl"};
     std::string dsn;
     std::string prefix{"hist_"};
@@ -36,7 +35,7 @@ int main(int argc, char *argv[]) {
     bool keepLatLng = false;
 
     // options configuration array for getopt
-    static struct option long_options[] = {
+    const struct option long_options[] = {
         {"help",         no_argument, nullptr, 'h'},
         {"debug",        no_argument, nullptr, 'd'},
         {"store-errors", no_argument, nullptr, 'e'},
@@ -50,7 +49,7 @@ int main(int argc, char *argv[]) {
     };
 
     // walk through the options
-    while (1) {
+    while (true) {
         const int c = getopt_long(argc, argv, "hdeilS:D:P:", long_options, nullptr);
         if (c == -1) {
             break;
@@ -74,7 +73,7 @@ int main(int argc, char *argv[]) {
                 printStoreErrors = true;
                 break;
 
-            // calculate the interior-point ans store it in the database
+            // calculate the interior-point and store it in the database
             case 'i':
                 calculateInterior = true;
                 break;
@@ -105,37 +104,33 @@ int main(int argc, char *argv[]) {
     if (showHelp || argc - optind < 1) {
         // print a short description of the possible options
         std::cerr
-            << "Usage: " << argv[0] << " [OPTIONS] OSMFILE" << std::endl
-            << "Options:" << std::endl
-            << "  -h|--help" << std::endl
-            << "       show this nice, little help message" << std::endl
-            << "  -d|--debug" << std::endl
-            << "       enable debug messages" << std::endl
-            << "  -e|--store-errors" << std::endl
-            << "       enables errors from the node-store. Possibly many in softcutted files" << std::endl
-            << "       because of incomplete reference in the input" << std::endl
-            << "  -i|--interior" << std::endl
-            << "       calculate the interior-point ans store it in the database" << std::endl
-            << "  -l|--latlng" << std::endl
-            << "       keep lat/lng ant don't transform to mercator" << std::endl
-            << "  -s|--nodestore" << std::endl
-            << "       set the nodestore type [defaults to '" << nodestore << "']" << std::endl
-            << "       possible values: " << std::endl
-            << "          stl    (needs more memory but is more robust and a little faster)" << std::endl
-            << "          sparse (needs much, much less memory but is still experimental)" << std::endl
-            << "  -D|--dsn" << std::endl
-            << "       set the database dsn, check the postgres documentation for syntax" << std::endl
-            << "  -P|--prefix" << std::endl
-            << "       set the table-prefix [defaults to '"  << prefix << "']" << std::endl;
+            << "Usage: " << argv[0] << " [OPTIONS] OSMFILE\n"
+            << "Options:\n"
+            << "  -h|--help\n"
+            << "       show this nice, little help message\n"
+            << "  -d|--debug\n"
+            << "       enable debug messages\n"
+            << "  -e|--store-errors\n"
+            << "       enables errors from the node-store. Possibly many in softcutted files\n"
+            << "       because of incomplete reference in the input\n"
+            << "  -i|--interior\n"
+            << "       calculate the interior-point ans store it in the database\n"
+            << "  -l|--latlng\n"
+            << "       keep lat/lng ant don't transform to mercator\n"
+            << "  -s|--nodestore\n"
+            << "       set the nodestore type [defaults to '" << nodestore << "']\n"
+            << "       possible values: \n"
+            << "          stl    (needs more memory but is more robust and a little faster)\n"
+            << "          sparse (needs much, much less memory but is still experimental)\n"
+            << "  -D|--dsn\n"
+            << "       set the database dsn, check the postgres documentation for syntax\n"
+            << "  -P|--prefix\n"
+            << "       set the table-prefix [defaults to '"  << prefix << "']\n";
 
         return 1;
     }
 
-    // strip off the filename
-    filename = argv[optind];
-
-    // open the input-file
-    osmium::io::File infile{filename};
+    osmium::io::File infile{argv[optind]};
 
     // create an instance of the import-handler
     std::unique_ptr<Nodestore> store;

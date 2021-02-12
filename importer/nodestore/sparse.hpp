@@ -60,8 +60,8 @@ private:
     const static osmium::object_id_type EST_MAX_NODE_ID = 2^31; // soon 2^32
     const static osmium::object_id_type NODE_BUFFER_STEPS = 2^16; // soon 2^32
 
-    typedef std::vector< char* > memoryBlocks_t;
-    typedef std::vector< char* >::const_iterator memoryBlocks_cit;
+    using memoryBlocks_t = std::vector<char*>;
+    using memoryBlocks_cit = memoryBlocks_t::const_iterator;
 
     /**
      * list of all allocated memory blocks
@@ -149,45 +149,45 @@ public:
         PackedNodeTimeinfo *infoPtr;
 
         // test if there is enough space for another PackedNodeTimeinfo
-        if(isPrintingDebugMessages()) {
+        if (isPrintingDebugMessages()) {
             std::cerr << "  currentMemoryBlock=" << (void*)currentMemoryBlock << std::endl;
             std::cerr << "  currentMemoryBlockPosition=" << currentMemoryBlockPosition << std::endl;
         }
 
-        if(currentMemoryBlockPosition + sizeof(PackedNodeTimeinfo) >= BLOCK_SIZE) {
-            if(isPrintingDebugMessages()) {
+        if (currentMemoryBlockPosition + sizeof(PackedNodeTimeinfo) >= BLOCK_SIZE) {
+            if (isPrintingDebugMessages()) {
                 std::cerr << "  -> memory block is full (pos " << currentMemoryBlockPosition << " + sizeof " << sizeof(PackedNodeTimeinfo) << " >= BLOCK_SIZE " << BLOCK_SIZE << ")" << std::endl;
             }
 
             allocateNewMemoryBlock();
 
-            if(isPrintingDebugMessages()) {
+            if (isPrintingDebugMessages()) {
                 std::cerr << "  -> allocating new memory block at " << (void*)currentMemoryBlock << std::endl;
             }
 
-            if(lastNodeId != id) {
+            if (lastNodeId != id) {
                 // a new node, just use a new memory segment
-                if(isPrintingDebugMessages()) {
+                if (isPrintingDebugMessages()) {
                     std::cerr << "  -> node " << id << " has not yet a memory position assigned, nothing more to do" << std::endl;
                 }
             }
             else {
                 // same node as before, need to copy old versions into new memory block
-                if(isPrintingDebugMessages()) {
+                if (isPrintingDebugMessages()) {
                     std::cerr << "  -> node " << id << " has already a memory position assigned (" << idMap[id] << ")" << std::endl;
                 }
 
                 PackedNodeTimeinfo* srcPtr = idMap[id];
                 PackedNodeTimeinfo* dstPtr = reinterpret_cast< PackedNodeTimeinfo* >(currentMemoryBlock + currentMemoryBlockPosition);
 
-                if(isPrintingDebugMessages()) {
+                if (isPrintingDebugMessages()) {
                     std::cerr << "  -> copying node versions from old position (" << idMap[id] << ") to new position (" << (void*)currentMemoryBlock << ", offset " << currentMemoryBlockPosition << ")" << std::endl;
                     std::cerr << "  -> re-assigning memory position " << dstPtr << " (offset: " << currentMemoryBlockPosition << ") to node id #" << id << std::endl;
                 }
                 idMap[id] = dstPtr;
 
                 do {
-                    if(isPrintingDebugMessages()) {
+                    if (isPrintingDebugMessages()) {
                         std::cerr << "    -> copying node id #" << id << " from " << srcPtr << " to " << dstPtr << " (offset " << currentMemoryBlockPosition << ")" << std::endl;
                     }
 
@@ -199,19 +199,19 @@ public:
                     dstPtr->lon = srcPtr->lon;
 
                     currentMemoryBlockPosition += sizeof(PackedNodeTimeinfo);
-                    if(currentMemoryBlockPosition >= BLOCK_SIZE) {
+                    if (currentMemoryBlockPosition >= BLOCK_SIZE) {
                         std::cerr << "  -> node #" << id << " has more versions then could fit into a block size of " << BLOCK_SIZE << ". It's very unlikely that this ever happens, but you could try to increase the BLOCK_SIZE..." << std::endl;
                         throw new std::runtime_error("node does not fit into BLOCK_SIZE");
                     }
                     dstPtr = reinterpret_cast< PackedNodeTimeinfo* >(currentMemoryBlock + currentMemoryBlockPosition);
-                } while((++srcPtr)->t != 0);
+                } while ((++srcPtr)->t != 0);
             }
         }
 
-        if(lastNodeId != id) {
+        if (lastNodeId != id) {
             // new node
-            if(currentMemoryBlockPosition > 0) {
-                if(isPrintingDebugMessages()) {
+            if (currentMemoryBlockPosition > 0) {
+                if (isPrintingDebugMessages()) {
                     std::cerr << "  -> adding 0-separator of " << nodeSeparatorSize << " at memory position " << currentMemoryBlock + currentMemoryBlockPosition << " (from bytes " << currentMemoryBlockPosition << " to " << currentMemoryBlockPosition+nodeSeparatorSize << ")" << std::endl;
                 }
                 currentMemoryBlockPosition += nodeSeparatorSize;
@@ -220,11 +220,11 @@ public:
             // no memory segment for this node yet
             infoPtr = reinterpret_cast< PackedNodeTimeinfo* >(currentMemoryBlock + currentMemoryBlockPosition);
 
-            if(isPrintingDebugMessages()) {
+            if (isPrintingDebugMessages()) {
                 std::cerr << "  -> assigning memory position " << infoPtr << " (offset: " << currentMemoryBlockPosition << ") to node id #" << id << std::endl;
             }
 
-            if(id > maxNodeId) {
+            if (id > maxNodeId) {
                 idMap.resize(id + NODE_BUFFER_STEPS + 1);
                 maxNodeId = id + NODE_BUFFER_STEPS;
             }
@@ -235,7 +235,7 @@ public:
             infoPtr = reinterpret_cast< PackedNodeTimeinfo* >(currentMemoryBlock + currentMemoryBlockPosition);
         }
 
-        if(isPrintingDebugMessages()) {
+        if (isPrintingDebugMessages()) {
             std::cerr << "  -> storing " << sizeof(PackedNodeTimeinfo) << " bytes of data at memory position " << infoPtr << " (from bytes " << currentMemoryBlockPosition << " to " << currentMemoryBlockPosition+sizeof(PackedNodeTimeinfo) << ")" << std::endl;
         }
 
@@ -258,12 +258,12 @@ public:
     // because this was more easy to implement in the stl store, but once we
     // change the default from stl to sparse, we can change the return value, too
     timemap_ptr lookup(osmium::object_id_type id, bool &found) {
-        if(isPrintingStoreErrors()) {
+        if (isPrintingStoreErrors()) {
             std::cout << "lookup for timemap of node #" << id << std::endl;
         }
 
-        if(!idMap.test(id)) {
-            if(isPrintingStoreErrors()) {
+        if (!idMap.test(id)) {
+            if (isPrintingStoreErrors()) {
                 std::cerr << "  -> no memory position assigned for node, skipping" << std::endl;
             }
 
@@ -271,7 +271,7 @@ public:
             return timemap_ptr();
         }
 
-        if(isPrintingDebugMessages()) {
+        if (isPrintingDebugMessages()) {
             std::cerr << "  idMap[id]=" << idMap[id] << std::endl;
         }
 
@@ -280,16 +280,16 @@ public:
 
         Nodeinfo info;
         do {
-            if(isPrintingDebugMessages()) {
+            if (isPrintingDebugMessages()) {
                 std::cerr << "  -> found node id #" << id << "at memory position " << infoPtr << " (node-offset " << ((char*)infoPtr-(char*)basePtr) << ")" << std::endl;
             }
             info.lat = osmium::Location::fix_to_double(infoPtr->lat);
             info.lon = osmium::Location::fix_to_double(infoPtr->lon);
             info.uid = infoPtr->uid;
             tMap->insert(timepair(infoPtr->t, info));
-        } while((++infoPtr)->t != 0);
+        } while ((++infoPtr)->t != 0);
 
-        if(isPrintingDebugMessages()) {
+        if (isPrintingDebugMessages()) {
             std::cerr << "  -> returning timemap with " << tMap->size() << " items" << std::endl;
         }
 
@@ -298,12 +298,12 @@ public:
     }
 
     Nodeinfo lookup(osmium::object_id_type id, time_t t, bool &found) {
-        if(isPrintingStoreErrors()) {
+        if (isPrintingStoreErrors()) {
             std::cout << "lookup for coords of oldest node #" << id << " younger-or-equal then " << t << " (" << Timestamp::format(t) << ")" << std::endl;
         }
 
-        if(!idMap.test(id)) {
-            if(isPrintingStoreErrors()) {
+        if (!idMap.test(id)) {
+            if (isPrintingStoreErrors()) {
                 std::cerr << "  -> no memory position assigned for node, skipping" << std::endl;
             }
 
@@ -312,7 +312,7 @@ public:
         }
 
         PackedNodeTimeinfo *basePtr = idMap[id], *infoPtr = basePtr;
-        if(isPrintingDebugMessages()) {
+        if (isPrintingDebugMessages()) {
             std::cerr << "  idMap[id]=" << idMap[id] << std::endl;
         }
 
@@ -321,34 +321,33 @@ public:
 
         // find the oldest node-version younger then t
         do {
-            if(isPrintingDebugMessages()) {
+            if (isPrintingDebugMessages()) {
                 std::cerr << "  -> probing node id #" << id << " at " << infoPtr->t << " (" << Timestamp::format(infoPtr->t) << ") at memory position " << infoPtr << " (node-offset " << ((char*)infoPtr-(char*)basePtr) << ")" << std::endl;
             }
 
-            if(infoPtr->t <= t && infoPtr->t > infoTime) {
+            if (infoPtr->t <= t && infoPtr->t > infoTime) {
                 info.lat = osmium::Location::fix_to_double(infoPtr->lat);
                 info.lon = osmium::Location::fix_to_double(infoPtr->lon);
                 info.uid = infoPtr->uid;
                 infoTime = infoPtr->t;
 
-                if(isPrintingDebugMessages()) {
+                if (isPrintingDebugMessages()) {
                     std::cerr << "    -> match, copying data" << std::endl;
                 }
             }
-        } while((++infoPtr)->t != 0);
+        } while ((++infoPtr)->t != 0);
 
-        if(infoTime == 0) {
+        if (infoTime == 0) {
             info.lat = osmium::Location::fix_to_double(basePtr->lat);
             info.lon = osmium::Location::fix_to_double(basePtr->lon);
             info.uid = basePtr->uid;
             infoTime = basePtr->t;
 
-            if(isPrintingDebugMessages()) {
+            if (isPrintingDebugMessages()) {
                 std::cerr << "  -> way is younger " << Timestamp::format(t) << " then the youngest available version of the node, using first version from " << infoTime << " (" << Timestamp::format(infoTime) << ")" << std::endl;
             }
-        }
-        else {
-            if(isPrintingDebugMessages()) {
+        } else {
+            if (isPrintingDebugMessages()) {
                 std::cerr << "  -> returning coords from " << infoTime << " (" << Timestamp::format(infoTime) << ")" << std::endl;
             }
         }
