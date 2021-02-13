@@ -34,7 +34,7 @@ inline geos::geom::GeometryFactory* geos_geometry_factory() {
 class GeomBuilder {
 
     Nodestore *m_nodestore;
-    bool m_keepLatLng;
+    bool m_keepLatLng = false;
     bool m_debug = false;
     bool m_showerrors = false;
 
@@ -49,24 +49,20 @@ public:
         // pointer to coordinate vector
         std::vector<geos::geom::Coordinate> *c = new std::vector<geos::geom::Coordinate>();
 
-        // iterate over all nodes
-        auto end = nodes.end();
-        for (auto it = nodes.begin(); it != end; ++it) {
-            // the id
-            osmium::object_id_type id = it->ref();
-
+        for (const auto& nr : nodes) {
             // was the node found in the store?
             bool found;
-            Nodestore::Nodeinfo info = m_nodestore->lookup(id, timestamp.seconds_since_epoch(), found);
+            Nodestore::Nodeinfo info = m_nodestore->lookup(nr.ref(), timestamp.seconds_since_epoch(), found);
 
             // a missing node can just be skipped
-            if (!found)
+            if (!found) {
                 continue;
+            }
 
             double lon = info.lon, lat = info.lat;
 
             if (m_debug) {
-                std::cerr << "node #" << id << " at tstamp " << timestamp.seconds_since_epoch() << " references node at POINT(" << std::setprecision(8) << lon << ' ' << lat << ")\n";
+                std::cerr << "node #" << nr.ref() << " at tstamp " << timestamp.seconds_since_epoch() << " references node at POINT(" << std::setprecision(8) << lon << ' ' << lat << ")\n";
             }
 
             // create a coordinate-object and add it to the vector
@@ -74,7 +70,7 @@ public:
                 if (!Project::toMercator(&lon, &lat))
                     continue;
             }
-            c->push_back(geos::geom::Coordinate(lon, lat, DoubleNotANumber));
+            c->push_back(geos::geom::Coordinate{lon, lat, DoubleNotANumber});
         }
 
         // if less then 2 nodes could be found in the store, no valid way
@@ -124,19 +120,8 @@ public:
         return geom;
     }
 
-    bool isKeepingLatLng() {
-        return m_keepLatLng;
-    }
-
     void keepLatLng(bool shouldKeepLatLng) {
         m_keepLatLng = shouldKeepLatLng;
-    }
-
-    /**
-     * is this nodestore printing debug messages
-     */
-    bool isPrintingDebugMessages() {
-        return m_debug;
     }
 
     /**

@@ -40,16 +40,6 @@ public:
     using timemap = std::map<time_t, Nodeinfo>;
 
     /**
-     * a pair of a time and a nodeinfo stored in a timemap
-     */
-    using timepair = std::pair<time_t, Nodeinfo>;
-
-    /**
-     * iterator over a timemap
-     */
-    using timemap_it = timemap::iterator;
-
-    /**
      * constant iterator over a timemap
      */
     using timemap_cit = timemap::const_iterator;
@@ -64,6 +54,20 @@ protected:
      * a Nodeinfo that equals null, returned in case of an error
      */
     const Nodeinfo nullinfo{};
+
+    /**
+     * is this nodestore printing debug messages
+     */
+    bool isPrintingDebugMessages() const noexcept {
+        return m_debug;
+    }
+
+    /**
+     * is this nodestore printing errors originating from store-misses
+     */
+    bool isPrintingStoreErrors() const noexcept {
+        return m_storeerrors;
+    }
 
 private:
     /**
@@ -80,24 +84,10 @@ public:
     virtual ~Nodestore() {}
 
     /**
-     * is this nodestore printing debug messages
-     */
-    bool isPrintingDebugMessages() {
-        return m_debug;
-    }
-
-    /**
      * should this nodestore print debug messages
      */
     void printDebugMessages(bool shouldPrintDebugMessages) {
         m_debug = shouldPrintDebugMessages;
-    }
-
-    /**
-     * is this nodestore printing errors originating from store-misses
-     */
-    bool isPrintingStoreErrors() {
-        return m_storeerrors;
     }
 
     /**
@@ -115,7 +105,7 @@ public:
     /**
      * retrieve all information about a node, indexed by time
      */
-    virtual timemap_ptr lookup(osmium::object_id_type id, bool &found) = 0;
+    virtual timemap_ptr lookup(osmium::object_id_type id, bool &found) const = 0;
 
     /**
      * lookup the version of a node that was valid at time_t t
@@ -124,7 +114,7 @@ public:
      * if found != true, the returned value is identical to nullinfo and
      * should not be used.
      */
-    virtual Nodeinfo lookup(osmium::object_id_type id, time_t t, bool &found) = 0;
+    virtual Nodeinfo lookup(osmium::object_id_type id, time_t t, bool &found) const = 0;
 };
 
 #endif // IMPORTER_NODESTORE_HPP

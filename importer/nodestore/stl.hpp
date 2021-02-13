@@ -46,18 +46,18 @@ public:
             tmap = it->second;
         }
 
-        tmap->insert(timepair(t, info));
+        tmap->emplace(t, info);
         if (isPrintingDebugMessages()) {
             std::cerr << "adding timepair for node #" << id << " at tstamp " << t << std::endl;
         }
     }
 
-    timemap_ptr lookup(osmium::object_id_type id, bool &found) {
+    timemap_ptr lookup(osmium::object_id_type id, bool &found) const {
         if (isPrintingDebugMessages()) {
             std::cerr << "looking up timemap of node #" << id << std::endl;
         }
 
-        nodemap_it nit = m_nodemap.find(id);
+        const auto nit = m_nodemap.find(id);
         if (nit == m_nodemap.end()) {
             if (isPrintingStoreErrors()) {
                 std::cerr << "no timemap for node #" << id << ", skipping node" << std::endl;
@@ -70,7 +70,7 @@ public:
         return nit->second;
     }
 
-    Nodeinfo lookup(osmium::object_id_type id, time_t t, bool &found) {
+    Nodeinfo lookup(osmium::object_id_type id, time_t t, bool &found) const {
         if (isPrintingDebugMessages()) {
             std::cerr << "looking up information of node #" << id << " at tstamp " << t << std::endl;
         }
@@ -79,7 +79,7 @@ public:
         if (!found) {
             return nullinfo;
         }
-        timemap_it tit = tmap->upper_bound(t);
+        auto tit = tmap->upper_bound(t);
 
         if (tit == tmap->begin()) {
             if (isPrintingStoreErrors()) {

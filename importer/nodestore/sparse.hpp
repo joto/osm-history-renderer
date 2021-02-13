@@ -257,7 +257,7 @@ public:
     // so we could return a simple time vector. it actually is only a timemap
     // because this was more easy to implement in the stl store, but once we
     // change the default from stl to sparse, we can change the return value, too
-    timemap_ptr lookup(osmium::object_id_type id, bool &found) {
+    timemap_ptr lookup(osmium::object_id_type id, bool &found) const {
         if (isPrintingStoreErrors()) {
             std::cout << "lookup for timemap of node #" << id << std::endl;
         }
@@ -286,7 +286,7 @@ public:
             info.lat = osmium::Location::fix_to_double(infoPtr->lat);
             info.lon = osmium::Location::fix_to_double(infoPtr->lon);
             info.uid = infoPtr->uid;
-            tMap->insert(timepair(infoPtr->t, info));
+            tMap->emplace(infoPtr->t, info);
         } while ((++infoPtr)->t != 0);
 
         if (isPrintingDebugMessages()) {
@@ -297,7 +297,7 @@ public:
         return tMap;
     }
 
-    Nodeinfo lookup(osmium::object_id_type id, time_t t, bool &found) {
+    Nodeinfo lookup(osmium::object_id_type id, time_t t, bool &found) const {
         if (isPrintingStoreErrors()) {
             std::cout << "lookup for coords of oldest node #" << id << " younger-or-equal then " << t << " (" << Timestamp::format(t) << ")" << std::endl;
         }

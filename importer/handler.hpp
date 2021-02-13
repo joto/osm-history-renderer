@@ -37,24 +37,29 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
     SortTest m_sorttest;
 
     DbConn m_general;
-    DbCopyConn m_point, m_line, m_polygon;
+    DbCopyConn m_point;
+    DbCopyConn m_line;
+    DbCopyConn m_polygon;
 
     geos::io::WKBWriter wkb;
 
-    std::string m_dsn, m_prefix;
-    bool m_debug, m_storeerrors, m_interior, m_keepLatLng;
+    std::string m_dsn;
+    std::string m_prefix;
+    bool m_debug;
+    bool m_storeerrors;
+    bool m_interior;
+    bool m_keepLatLng;
 
     std::map<osmium::user_id_type, std::string> m_username_map;
-    using username_pair_t = std::pair<osmium::user_id_type, std::string>;
 
     void write_node(const osmium::DiffNode& node) {
-        auto cur = &node.curr();
+        const auto& cur = node.curr();
 
         if (m_debug) {
-            std::cout << "node n" << cur->id() << 'v' << cur->version() << " at tstamp " << cur->timestamp() << " (" << cur->timestamp().to_iso() << ")\n";
+            std::cout << "node n" << cur.id() << 'v' << cur.version() << " at tstamp " << cur.timestamp() << " (" << cur.timestamp().to_iso() << ")\n";
         }
 
-        std::string valid_from{cur->timestamp().to_iso()};
+        std::string valid_from{cur.timestamp().to_iso()};
         std::string valid_to{"\\N"};
 
         // if this is another version of the same entity, the end-timestamp of the current entity is the timestamp of the next one
@@ -63,46 +68,47 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
         }
 
         // if the current version is deleted, it's end-timestamp is the same as its creation-timestamp
-        else if (!cur->visible()) {
+        else if (!cur.visible()) {
             valid_to = valid_from;
         }
 
         // some xml-writers write deleted nodes without corrdinates, some write 0/0 as coorinate
         // default to 0/0 for those input nodes which dosn't carry corrdinates with them
         double lon = 0, lat = 0;
-        if (cur->location().valid()) {
-            lon = cur->location().lon();
-            lat = cur->location().lat();
+        if (cur.location().valid()) {
+            lon = cur.location().lon();
+            lat = cur.location().lat();
         }
 
         // if this node is not-deleted (ie visible), write it to the nodestore
         // some osm-writers write invisible nodes with 0/0 coordinates which would screw up rendering, if not ignored in the nodestore
         // see https://github.com/MaZderMind/osm-history-renderer/issues/8
-        if (cur->visible()) {
-            m_store->record(cur->id(), cur->uid(), cur->timestamp().seconds_since_epoch(), lon, lat);
+        if (cur.visible()) {
+            m_store->record(cur.id(), cur.uid(), cur.timestamp().seconds_since_epoch(), lon, lat);
         }
 
-        m_username_map.insert( username_pair_t(cur->uid(), std::string(cur->user()) ) );
+        m_username_map.emplace(cur.uid(), cur.user());
 
         if (!m_keepLatLng) {
-            if (!Project::toMercator(&lon, &lat))
+            if (!Project::toMercator(&lon, &lat)) {
                 return;
+            }
         }
 
         // SPEED: sum up 64k of data, before sending them to the database
         // SPEED: instead of stringstream, which does dynamic allocation, use a fixed buffer and snprintf
         std::stringstream line;
         line << std::setprecision(8) <<
-            cur->id() << '\t' <<
-            cur->version() << '\t' <<
-            (cur->visible() ? 't' : 'f') << '\t' <<
-            cur->uid() << '\t' <<
-            DbCopyConn::escape_string(cur->user()) << '\t' <<
+            cur.id() << '\t' <<
+            cur.version() << '\t' <<
+            (cur.visible() ? 't' : 'f') << '\t' <<
+            cur.uid() << '\t' <<
+            DbCopyConn::escape_string(cur.user()) << '\t' <<
             valid_from << '\t' <<
             valid_to << '\t' <<
-            HStore::format(cur->tags()) << '\t';
+            HStore::format(cur.tags()) << '\t';
 
-        if (cur->visible()) {
+        if (cur.visible()) {
             line << "SRID=3857;POINT(" << lon << ' ' << lat << ')';
         } else {
             line << "\\N";
@@ -113,62 +119,62 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
     }
 
     void write_way(const osmium::DiffWay& way) {
-        auto next = &way.next();
-        auto cur = &way.curr();
+        const auto& next = way.next();
+        const auto& cur = way.curr();
 
         if (m_debug) {
-            std::cout << "way w" << cur->id() << 'v' << cur->version() << " at tstamp " << cur->timestamp().seconds_since_epoch() << " (" << cur->timestamp().to_iso() << ")\n";
+            std::cout << "way w" << cur.id() << 'v' << cur.version() << " at tstamp " << cur.timestamp().seconds_since_epoch() << " (" << cur.timestamp().to_iso() << ")\n";
         }
 
-        time_t valid_from = cur->timestamp().seconds_since_epoch();
+        time_t valid_from = cur.timestamp().seconds_since_epoch();
         time_t valid_to = 0;
 
         std::vector<MinorTimesCalculator::MinorTimesInfo> *minor_times = nullptr;
-        if (cur->visible()) {
+        if (cur.visible()) {
             if (!way.last()) {
-                if (cur->timestamp() > next->timestamp()) {
+                if (cur.timestamp() > next.timestamp()) {
                     if (m_storeerrors) {
-                        std::cerr << "inverse timestamp-order in way " << cur->id() << " between v" << cur->version() << " and v" << next->version() << ", skipping minor ways\n";
+                        std::cerr << "inverse timestamp-order in way " << cur.id() << " between v" << cur.version() << " and v" << next.version() << ", skipping minor ways\n";
                     }
                 } else {
                     // collect minor ways between current and next
-                    minor_times = m_mtimes.forWay(cur->nodes(), cur->timestamp().seconds_since_epoch(), next->timestamp().seconds_since_epoch());
+                    minor_times = m_mtimes.forWay(cur.nodes(), cur.timestamp().seconds_since_epoch(), next.timestamp().seconds_since_epoch());
                 }
             } else {
                 // collect minor ways between current and the end
-                minor_times = m_mtimes.forWay(cur->nodes(), cur->timestamp().seconds_since_epoch());
+                minor_times = m_mtimes.forWay(cur.nodes(), cur.timestamp().seconds_since_epoch());
             }
         }
 
         // if there are minor ways, it's the timestamp of the first minor way
-        if (minor_times && minor_times->size() > 0) {
-            valid_to = (*minor_times->begin()).t;
+        if (minor_times && !minor_times->empty()) {
+            valid_to = minor_times->front().t;
         }
 
         // if this is another version of the same entity, the end-timestamp of the current entity is the timestamp of the next one
         else if (!way.last()) {
-            valid_to = next->timestamp().seconds_since_epoch();
+            valid_to = next.timestamp().seconds_since_epoch();
         }
 
         // if the current version is deleted, it's end-timestamp is the same as its creation-timestamp
-        else if (!cur->visible()) {
+        else if (!cur.visible()) {
             valid_to = valid_from;
         }
 
         // write the main way version
         write_way_to_db(
             way,
-            cur->id(),
-            cur->version(),
+            cur.id(),
+            cur.version(),
             0 /*minor*/,
-            cur->visible(),
-            cur->uid(),
-            cur->user(),
-            cur->timestamp().seconds_since_epoch(),
+            cur.visible(),
+            cur.uid(),
+            cur.user(),
+            cur.timestamp().seconds_since_epoch(),
             valid_from,
             valid_to,
-            cur->tags(),
-            cur->nodes()
+            cur.tags(),
+            cur.nodes()
         );
 
         if (minor_times) {
@@ -177,13 +183,13 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
             const auto end = minor_times->end();
             for (auto it = minor_times->begin(); it != end; it++) {
                 if (m_debug) {
-                    std::cout << "minor way w" << cur->id() << 'v' << cur->version() << '.' << minor << " at tstamp " << (*it).t << " (" << Timestamp::format( (*it).t ) << ")\n";
+                    std::cout << "minor way w" << cur.id() << 'v' << cur.version() << '.' << minor << " at tstamp " << (*it).t << " (" << Timestamp::format( (*it).t ) << ")\n";
                 }
 
                 valid_from = (*it).t;
                 if (it == end-1) {
                     if (!way.last()) {
-                        valid_to = next->timestamp().seconds_since_epoch();
+                        valid_to = next.timestamp().seconds_since_epoch();
                     } else {
                         valid_to = 0;
                     }
@@ -197,8 +203,8 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
 
                 write_way_to_db(
                     way,
-                    cur->id(),
-                    cur->version(),
+                    cur.id(),
+                    cur.version(),
                     minor,
                     true,
                     uid,
@@ -206,8 +212,8 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
                     t,
                     valid_from,
                     valid_to,
-                    cur->tags(),
-                    cur->nodes()
+                    cur.tags(),
+                    cur.nodes()
                 );
 
                 minor++;
@@ -267,14 +273,14 @@ class ImportHandler : public osmium::diff_handler::DiffHandler {
                 // if we have a previous version of this way (which we should have or this way has already been deleted in its initial version)
                 // we can use the previous version to decide between line and area
 
-                auto prev = &way.prev();
+                const auto&prev = way.prev();
 
-                bool looksLikePolygon = PolygonIdentifyer::looksLikePolygon(prev->tags());
-                geom = m_geom.forWay(prev->nodes(), prev->timestamp(), looksLikePolygon);
+                const bool looksLikePolygon = PolygonIdentifyer::looksLikePolygon(prev.tags());
+                geom = m_geom.forWay(prev.nodes(), prev.timestamp(), looksLikePolygon);
 
                 if (!geom) {
                     if (m_debug) {
-                        std::cerr << "no valid geometry for way of " << prev->id() << 'v' << prev->version() << " which was consulted to determine if the deleted way " <<
+                        std::cerr << "no valid geometry for way of " << prev.id() << 'v' << prev.version() << " which was consulted to determine if the deleted way " <<
                             id << "v" << version << " once was an area or a line. skipping that double-deleted way.\n";
                     }
                     return;
@@ -339,26 +345,12 @@ public:
             m_prefix("hist_") {
     }
 
-    ~ImportHandler() {}
-
-    const std::string& dsn() const noexcept {
-        return m_dsn;
-    }
-
     void dsn(std::string& newDsn) {
         m_dsn = newDsn;
     }
 
-    const std::string& prefix() const noexcept {
-        return m_prefix;
-    }
-
     void prefix(std::string& newPrefix) {
         m_prefix = newPrefix;
-    }
-
-    bool isPrintingStoreErrors() const noexcept {
-        return m_storeerrors;
     }
 
     void printStoreErrors(bool shouldPrintStoreErrors) {
@@ -366,25 +358,13 @@ public:
         m_store->printStoreErrors(shouldPrintStoreErrors);
     }
 
-    bool isCalculatingInterior() const noexcept {
-        return m_interior;
-    }
-
     void calculateInterior(bool shouldCalculateInterior) {
         m_interior = shouldCalculateInterior;
-    }
-
-    bool isKeepingLatLng() const noexcept {
-        return m_keepLatLng;
     }
 
     void keepLatLng(bool shouldKeepLatLng) {
         m_keepLatLng = shouldKeepLatLng;
         m_geom.keepLatLng(shouldKeepLatLng);
-    }
-
-    bool isPrintingDebugMessages() const noexcept {
-        return m_debug;
     }
 
     void printDebugMessages(bool shouldPrintDebugMessages) {
