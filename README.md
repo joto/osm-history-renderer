@@ -1,3 +1,10 @@
+
+This branch contains a new version of the importer based on a current version
+of libosmium instead of the very old one of the master branch. You need
+libosmium and protozero installed.
+
+===
+
 # Unmaintained
 The osm-history-renderer is currently unmaintained and searching for a new Maintainer.
 
