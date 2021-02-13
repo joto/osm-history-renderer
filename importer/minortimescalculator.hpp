@@ -5,39 +5,40 @@
 
 class MinorTimesCalculator {
 
-    Nodestore *m_nodestore;
+    const Nodestore* m_nodestore;
 
 public:
-    MinorTimesCalculator(Nodestore *nodestore): m_nodestore(nodestore) {}
+    MinorTimesCalculator(const Nodestore* nodestore): m_nodestore(nodestore) {}
 
     struct MinorTimesInfo {
         time_t t;
         osmium::user_id_type uid;
 
-        bool operator<(const MinorTimesInfo& a) const {
-            return t < a.t;
+        MinorTimesInfo(time_t time, osmium::user_id_type user_id) : t(time), uid(user_id) {
         }
 
-        bool operator==(const MinorTimesInfo& a) const {
-            return t == a.t;
+        friend bool operator<(const MinorTimesInfo& a, const MinorTimesInfo& b) noexcept {
+            return a.t < b.t;
+        }
+
+        friend bool operator==(const MinorTimesInfo& a, const MinorTimesInfo& b) noexcept {
+            return a.t == b.t;
         }
     };
 
-    std::vector<MinorTimesInfo> *forWay(const osmium::NodeRefList &nodes, time_t from, time_t to) {
+    std::vector<MinorTimesInfo> *forWay(const osmium::NodeRefList &nodes, time_t from, time_t to = 0) {
         std::vector<MinorTimesInfo> *minor_times = new std::vector<MinorTimesInfo>();
 
-        for (auto nodeit = nodes.begin(); nodeit != nodes.end(); nodeit++) {
-            osmium::object_id_type id = nodeit->ref();
-
+        for (const auto& nr : nodes) {
             bool found = false;
-            Nodestore::timemap_ptr tmap = m_nodestore->lookup(id, found);
+            const auto tmap = m_nodestore->lookup(nr.ref(), found);
             if (!found) {
                 continue;
             }
 
-            Nodestore::timemap_cit lower = tmap->lower_bound(from);
-            Nodestore::timemap_cit upper = to == 0 ? tmap->end() : tmap->upper_bound(to);
-            for (Nodestore::timemap_cit it = lower; it != upper; it++) {
+            auto it = tmap->lower_bound(from);
+            const auto upper = to == 0 ? tmap->end() : tmap->upper_bound(to);
+            for (; it != upper; ++it) {
                 /*
                  * lower_bound returns elements *not lower then* from, so it can return times == from
                  * this results in minor with timestamps and information equal to the original way
@@ -45,8 +46,7 @@ public:
                 if (it->first == from) {
                     continue;
                 }
-                MinorTimesInfo info = {it->first, it->second.uid};
-                minor_times->push_back(info);
+                minor_times->emplace_back(it->first, it->second.uid);
             }
         }
 
@@ -56,9 +56,6 @@ public:
         return minor_times;
     }
 
-    std::vector<MinorTimesInfo> *forWay(const osmium::NodeRefList &nodes, time_t from) {
-        return forWay(nodes, from, 0);
-    }
 };
 
 #endif // IMPORTER_MINORTIMESCALCULATOR_HPP
