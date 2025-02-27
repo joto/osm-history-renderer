@@ -70,7 +70,7 @@ public:
                 if (!Project::toMercator(&lon, &lat))
                     continue;
             }
-            c->push_back(geos::geom::Coordinate{lon, lat, DoubleNotANumber});
+            c->push_back(geos::geom::Coordinate{lon, lat, geos::DoubleNotANumber});
         }
 
         // if less then 2 nodes could be found in the store, no valid way
@@ -95,14 +95,14 @@ public:
                 geom = f->createPolygon(
                     f->createLinearRing(
                         f->getCoordinateSequenceFactory()->create(c)
-                    ),
+                    ).get(),
                     nullptr
                 );
             } else {
                 // build a linestring
                 geom = f->createLineString(
                     f->getCoordinateSequenceFactory()->create(c)
-                );
+                ).get();
             }
         } catch (const geos::util::GEOSException& e) {
             if (m_showerrors) {
