@@ -95,14 +95,14 @@ public:
                 geom = f->createPolygon(
                     f->createLinearRing(
                         f->getCoordinateSequenceFactory()->create(c)
-                    ).get(),
+                    ).release(),
                     nullptr
                 );
             } else {
                 // build a linestring
                 geom = f->createLineString(
                     f->getCoordinateSequenceFactory()->create(c)
-                ).get();
+                ).release();
             }
         } catch (const geos::util::GEOSException& e) {
             if (m_showerrors) {
